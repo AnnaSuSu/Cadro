@@ -89,10 +89,13 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
             contextMenuSourceOf(event),
           );
         }}
-        className="flex h-[30px] w-full cursor-pointer items-center gap-2 rounded-[10px] px-2 group-hover/project-folder:pe-9 group-focus-within/project-folder:pe-9 pointer-coarse:pe-9 text-left outline-none motion-safe:transition-colors motion-safe:duration-100 hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="flex h-[30px] w-full cursor-pointer items-center gap-2 rounded-(--sidebar-row-radius) px-2 group-hover/project-folder:pe-9 group-focus-within/project-folder:pe-9 pointer-coarse:pe-9 text-left outline-none motion-safe:transition-colors motion-safe:duration-100 hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <span className="grid size-4 shrink-0 place-items-center">
-          <Folder aria-hidden className="size-[15px] stroke-[1.65] text-sidebar-foreground" />
+          <Folder
+            aria-hidden
+            className="size-[15px] stroke-(length:--sidebar-icon-stroke) text-sidebar-foreground"
+          />
         </span>
         <span className="min-w-0 flex-1 truncate text-sm font-normal text-sidebar-foreground">
           {group.displayName}

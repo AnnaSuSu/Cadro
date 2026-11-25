@@ -128,7 +128,7 @@ export function SidebarThreadHeader({
             label={gt("Search threads")}
             onClick={() => searchInputRef.current?.focus()}
           >
-            <SearchIcon aria-hidden className="size-4 stroke-[1.6]" />
+            <SearchIcon aria-hidden className="size-4 stroke-(length:--sidebar-icon-stroke)" />
           </SidebarHeaderIconButton>
         </SidebarChromeHeader>
         <div className="mt-1.5 flex items-center">
@@ -142,9 +142,10 @@ export function SidebarThreadHeader({
                 ? gt("New chat ({shortcut})", { shortcut: newThreadShortcutLabel })
                 : gt("New chat")
             }
-            className="h-[30px] min-w-0 flex-1 gap-2 rounded-[10px] px-2 font-normal"
+            size="row"
+            className="min-w-0 flex-1"
           >
-            <SquarePenIcon aria-hidden className="size-4 stroke-[1.6]" />
+            <SquarePenIcon aria-hidden className="size-4 stroke-(length:--sidebar-icon-stroke)" />
             <span>{gt("New chat")}</span>
           </SidebarMenuButton>
         </div>

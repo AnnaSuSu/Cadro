@@ -1,6 +1,6 @@
 import { workspaceAreaProps } from "../lib/workspaceFocus";
 import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
-import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { T, useGT, useMessages, Var } from "gt-react";
 import { RotateCcwIcon } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -127,10 +127,10 @@ function SettingsContentLayout() {
   const gt = useGT();
   const goBack = useReturnFromWorkspaceSubpage();
   const pageRef = useRef<HTMLElement | null>(null);
-  const focusPage = useCallback((page: HTMLElement | null) => {
+  const focusPage = (page: HTMLElement | null) => {
     pageRef.current = page;
     if (page && !page.contains(document.activeElement)) page.focus({ preventScroll: true });
-  }, []);
+  };
   useBlurFieldBeforeNavigation(pageRef);
   const titlebarHeight = useNativeTitlebarHeight();
   const contentArea = workspaceAreaProps("settings", 1, gt("Settings content"));
@@ -149,7 +149,7 @@ function SettingsContentLayout() {
       aria-label={gt("Settings")}
       data-settings-workspace=""
       style={{ "--settings-titlebar-height": `${titlebarHeight}px` } as CSSProperties}
-      className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background pb-safe text-foreground outline-none max-md:pt-[max(env(safe-area-inset-top),var(--settings-titlebar-height))]"
+      className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background pb-safe text-foreground outline-none max-md:pt-(--settings-safe-titlebar)"
       onKeyDown={(event) => {
         if (
           event.key !== "Escape" ||

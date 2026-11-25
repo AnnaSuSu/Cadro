@@ -44,6 +44,13 @@
   --control-radius: 0.5rem;
   --sidebar-content-inset: 0.5rem;
   --sidebar-control-gap: 0.5rem;
+  --sidebar-row-radius: 0.625rem;
+  --sidebar-icon-stroke: 1.6;
+  --sidebar-spinner-stroke: 1.5px;
+  --sidebar-title-fade-start: calc(100% - 1rem);
+  --sidebar-wordmark-size: 1.1875rem;
+  --sidebar-wordmark-weight: 650;
+  --settings-nav-inset: max(0.5rem, calc(var(--workspace-controls-left) - 3rem));
   --sidebar-icon-color: color-mix(
     in srgb,
     var(--contrast-sidebar-muted-foreground) 85%,
@@ -1765,6 +1772,10 @@ code {
 
 :where(:not(iframe))::-webkit-scrollbar-thumb:hover {
   background: var(--app-scrollbar-thumb-hover);
+}
+
+[data-settings-workspace] {
+  --settings-safe-titlebar: max(env(safe-area-inset-top), var(--settings-titlebar-height));
 }
 
 /* Chat markdown rendering */

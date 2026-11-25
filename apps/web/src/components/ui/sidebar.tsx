@@ -846,11 +846,16 @@ function SidebarContent({
   );
 }
 
-function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
+function SidebarGroup({
+  className,
+  header = false,
+  ...props
+}: React.ComponentProps<"div"> & { header?: boolean }) {
   return (
     <div
       className={cn(
         "relative flex w-full min-w-0 flex-col p-[var(--sidebar-content-inset)]",
+        header && "pt-0 pb-1",
         className,
       )}
       data-sidebar="group"
@@ -893,6 +898,7 @@ const sidebarMenuButtonVariants = cva(
       size: {
         default:
           "h-8 rounded-[var(--control-radius)] px-[var(--sidebar-row-content-inset)] py-1.5 text-sm",
+        row: "h-[30px] gap-2 rounded-(--sidebar-row-radius) px-2",
         icon: "size-8 justify-center rounded-[var(--control-radius)] p-0",
         lg: "h-12 rounded-[var(--control-radius)] px-[var(--sidebar-row-content-inset)] py-2 text-sm group-data-[collapsible=icon]:p-0!",
         sm: "h-7 rounded-[var(--control-radius)] px-[var(--sidebar-row-content-inset)] py-2 text-xs",

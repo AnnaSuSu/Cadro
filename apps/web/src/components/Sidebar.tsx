@@ -70,7 +70,6 @@ import {
 
 import {
   CheckIcon,
-  ChevronDownIcon,
   FolderIcon,
   FolderPlusIcon,
   ListFilterIcon,
@@ -433,7 +432,6 @@ function routeThreadOnly(
 
 // Separate hooks cache maps independently of later Sidebar hooks and preserve dnd-kit inputs.
 function useSidebarThreads(input: {
-  readonly projectScopeKey: string | null;
   readonly scopedProjectKeys: ReadonlySet<string> | null;
   readonly serverConfigs: ReadonlyMap<EnvironmentId, EnvironmentServerConfig>;
   readonly connectedEnvironmentIds: readonly EnvironmentId[];
@@ -447,7 +445,6 @@ function useSidebarThreads(input: {
   readonly keepEmptyFolders: (group: SidebarProjectSnapshot) => boolean;
 }) {
   const {
-    projectScopeKey,
     scopedProjectKeys,
     serverConfigs,
     connectedEnvironmentIds,
@@ -1153,7 +1150,6 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     findThread: (key) => threads.find((candidate) => threadShellKey(candidate) === key),
   });
   const projectScopeKeys = revealWidensScope ? [] : chosenProjectScopeKeys;
-  const projectScopeKey = projectScopeKeys.length === 0 ? null : projectScopeKeys.join("\n");
   const toggleProjectScopeKey = (key: string) =>
     setProjectScopeKeys(
       projectScopeKeys.includes(key)
@@ -1361,7 +1357,6 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     pinnedKeysById,
     activeKeysById,
   } = useSidebarThreads({
-    projectScopeKey,
     scopedProjectKeys,
     serverConfigs,
     connectedEnvironmentIds,
@@ -2914,7 +2909,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         ref={sidebarContentRef}
         className="min-h-full"
         fixedHeader={
-          <SidebarGroup className="z-[1] pt-0 pb-1">
+          <SidebarGroup header className="z-[1]">
             <SidebarThreadHeader
               isElectron={isElectron}
               treeMode={boringSidebarEnabled}
@@ -2997,7 +2992,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                         <ProjectFavicon project={scopedProjectGroups[0]} className="size-4" />
                       </span>
                     ) : (
-                      <ListFilterIcon className="size-4 stroke-[1.5]" />
+                      <ListFilterIcon className="size-4 stroke-(length:--sidebar-icon-stroke)" />
                     )}
                   </ComboboxTrigger>
                   {/* Refocusing the trigger after a pointer close shows its focus ring and opens its tooltip. */}
@@ -3521,7 +3516,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                   type="button"
                                   aria-current={current ? "page" : undefined}
                                   className={cn(
-                                    "flex h-[30px] w-full min-w-0 cursor-pointer items-center gap-2 rounded-[10px] ps-2 pe-3 text-start text-sm font-normal text-sidebar-foreground outline-none motion-safe:transition-colors motion-safe:duration-100 hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                                    "flex h-[30px] w-full min-w-0 cursor-pointer items-center gap-2 rounded-(--sidebar-row-radius) ps-2 pe-3 text-start text-sm font-normal text-sidebar-foreground outline-none motion-safe:transition-colors motion-safe:duration-100 hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                                     current && "bg-sidebar-row-active text-foreground",
                                   )}
                                   onClick={() =>
@@ -3530,7 +3525,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                     )
                                   }
                                 >
-                                  <span className="min-w-0 flex-1 overflow-hidden whitespace-nowrap mask-r-from-[calc(100%-1rem)]">
+                                  <span className="min-w-0 flex-1 overflow-hidden whitespace-nowrap mask-r-from-(--sidebar-title-fade-start)">
                                     {thread.title}
                                   </span>
                                   {status === "working" || status === "preparing" ? (

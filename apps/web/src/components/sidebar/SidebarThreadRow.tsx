@@ -18,10 +18,7 @@ import {
   QUEUED_TURN_START_GRACE_MS,
 } from "@cadro/client-runtime/state/thread-settled";
 import { formatDiffCount } from "@cadro/client-runtime/diff-count";
-import {
-  resolveSettledThreadTimestamp,
-  resolveThreadActivityTimestamp,
-} from "@cadro/client-runtime/state/thread-sort";
+import { resolveThreadActivityTimestamp } from "@cadro/client-runtime/state/thread-sort";
 import { type EnvironmentThreadSearchMatch } from "@cadro/client-runtime/state/thread-search";
 import {
   formatWorkingDurationLabel,
@@ -42,7 +39,6 @@ import {
   AlarmClockIcon,
   AlarmClockOffIcon,
   ArrowRightLeftIcon,
-  CheckIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   CircleDashedIcon,
@@ -587,7 +583,7 @@ export function SidebarWorkingRing() {
     <span
       ref={observeVisibleAnimation}
       aria-hidden
-      className="block size-[11px] shrink-0 rounded-full border-[1.5px] border-sidebar-foreground/30 border-t-sidebar-foreground border-r-sidebar-foreground/70 motion-safe:visible-animate-spin"
+      className="block size-[11px] shrink-0 rounded-full border-(length:--sidebar-spinner-stroke) border-sidebar-foreground/30 border-t-sidebar-foreground border-r-sidebar-foreground/70 motion-safe:visible-animate-spin"
     />
   );
 }
@@ -1344,7 +1340,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
                   // Keep a child title on the same guide as its folder name.
                   inFolder && "ps-8",
                   variant === "folder" &&
-                    "h-[30px] rounded-[10px] pe-3 motion-safe:transition-colors motion-safe:duration-100",
+                    "h-[30px] rounded-(--sidebar-row-radius) pe-3 motion-safe:transition-colors motion-safe:duration-100",
                 )}
                 onClick={handleClick}
                 onPointerEnter={intentPrefetch.onPointerEnter}

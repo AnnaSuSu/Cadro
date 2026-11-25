@@ -261,7 +261,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
           "max-md:absolute max-md:inset-y-0 max-md:start-0 max-md:z-10 max-md:w-full",
       )}
     >
-      <header className="drag-region flex h-(--workspace-topbar-height) shrink-0 items-center gap-1.5 px-2 max-md:justify-center md:ps-[max(0.5rem,calc(var(--workspace-controls-left)-3rem))]">
+      <header className="drag-region flex h-(--workspace-topbar-height) shrink-0 items-center gap-1.5 px-2 max-md:justify-center md:ps-(--settings-nav-inset)">
         <Button
           type="button"
           variant="ghost"

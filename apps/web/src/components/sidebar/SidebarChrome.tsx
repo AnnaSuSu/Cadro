@@ -77,14 +77,17 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
               aria-label={gt("Cadro home")}
               className="inline-flex h-8 items-center rounded-lg ps-2 pe-0.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             >
-              <CadroWordmark className="text-[19px] leading-none font-[650]" />
+              <CadroWordmark className="text-(length:--sidebar-wordmark-size) leading-none font-(--sidebar-wordmark-weight)" />
             </Link>
             <Menu>
               <MenuTrigger
                 aria-label={gt("Workspace menu")}
-                className="grid h-8 w-6 cursor-pointer place-items-center rounded-md text-sidebar-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                render={<Button variant="ghost-muted" size="icon-sm" className="h-8 w-6" />}
               >
-                <ChevronDownIcon aria-hidden className="size-3.5 stroke-[1.6]" />
+                <ChevronDownIcon
+                  aria-hidden
+                  className="size-3.5 stroke-(length:--sidebar-icon-stroke)"
+                />
               </MenuTrigger>
               <WorkspaceMenuPopup side="bottom" />
             </Menu>
@@ -112,15 +115,15 @@ function HistoryNavigationButton({ direction }: { direction: HistoryDirection })
         render={
           <Button
             aria-label={label}
-            className="size-8 text-sidebar-muted-foreground [-webkit-app-region:no-drag]"
+            className="size-8 [-webkit-app-region:no-drag]"
             disabled={!enabled}
             onClick={() => navigateHistory(direction)}
             size="icon-sm"
-            variant="ghost"
+            variant="ghost-muted"
           />
         }
       >
-        <Icon className="size-4 stroke-[1.5]" />
+        <Icon className="size-4 stroke-(length:--sidebar-icon-stroke)" />
       </TooltipTrigger>
       <TooltipPopup side="bottom">
         {label}
