@@ -1,0 +1,28 @@
+{
+  "name": "@cadro/source-control-testing",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./fakeSourceControlDriver": {
+      "types": "./src/fakeSourceControlDriver.ts",
+      "import": "./src/fakeSourceControlDriver.ts"
+    },
+    "./TestSourceControlHost": {
+      "types": "./src/TestSourceControlHost.ts",
+      "import": "./src/TestSourceControlHost.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "effect-tsgo tsrs --noEmit"
+  },
+  "dependencies": {
+    "@cadro/contracts": "workspace:*",
+    "@cadro/shared": "workspace:*",
+    "@cadro/source-control-core": "workspace:*",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

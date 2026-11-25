@@ -1,0 +1,7 @@
+{
+  "uuid": "snap-shot@cadro.dev",
+  "name": "Cadro SnapShots",
+  "description": "Allows Cadro to capture the focused window, identify it for optional accessibility text, and animate it into Cadro. Disable this extension to revoke access.",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
+  "version": 3
+}

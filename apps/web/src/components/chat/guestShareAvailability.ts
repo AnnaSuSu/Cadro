@@ -1,0 +1,22 @@
+import { managedCapabilityDenial } from "@cadro/client-runtime/contract-labels";
+import type { EnvironmentId } from "@cadro/contracts";
+import { Atom } from "effect/reactivity";
+
+import { environmentPresentations } from "~/state/presentation";
+import { serverEnvironment } from "~/state/server";
+
+/**
+ * Whether this environment offers "Share with guest": the user may create links there, and its
+ * Guest links beta is on (Settings > Labs). The server refuses links while the beta is off.
+ * Guest sharing requires a server that advertises support.
+ */
+export const canShareWithGuestAtom = Atom.family((environmentId: EnvironmentId) =>
+  Atom.make((get) => {
+    const serverConfig = get(environmentPresentations.serverConfigsAtom).get(environmentId);
+    return (
+      get(serverEnvironment.createGuestShare.permissionAtom(environmentId)) &&
+      serverConfig?.settings.guestSharingEnabled === true &&
+      managedCapabilityDenial(serverConfig.managedPolicy, "connect") === undefined
+    );
+  }).pipe(Atom.withLabel(`guest-share:available:${environmentId}`)),
+);

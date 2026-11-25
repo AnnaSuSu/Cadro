@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+      - name: Install workspace dependencies
+        run: |
+          corepack enable pnpm
+          corepack pnpm install --frozen-lockfile
+      - name: Install browser and native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev pkg-config xvfb
+          node apps/web/node_modules/playwright/cli.js install --with-deps --only-shell chromium
+          node apps/server/node_modules/playwright-core/cli.js install --only-shell chromium
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: xvfb-run -a pnpm test
+      - run: pnpm build
+      - run: pnpm build:pages

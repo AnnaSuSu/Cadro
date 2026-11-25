@@ -1,0 +1,10 @@
+{
+  "uuid": "snap-shot@cadro.dev",
+  "files": [
+    "metadata.json",
+    "extension.js",
+    "captureService.js",
+    "captureFeedback.js",
+    "feedbackGeometry.js"
+  ]
+}

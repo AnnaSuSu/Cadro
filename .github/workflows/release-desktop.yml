@@ -1,0 +1,198 @@
+name: Release desktop
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build (for example v0.1.12)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ inputs.tag || github.ref_name }}
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  package:
+    name: ${{ matrix.platform }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {
+              platform: mac,
+              arch: arm64,
+              target: dmg,
+              runner: macos-26,
+              rust-target: aarch64-apple-darwin,
+            }
+          - {
+              platform: mac,
+              arch: x64,
+              target: dmg,
+              runner: macos-26-intel,
+              rust-target: x86_64-apple-darwin,
+            }
+          - {
+              platform: linux,
+              arch: x64,
+              target: AppImage,
+              runner: ubuntu-24.04,
+              rust-target: x86_64-unknown-linux-gnu,
+            }
+          - {
+              platform: win,
+              arch: x64,
+              target: nsis,
+              runner: windows-2022,
+              rust-target: x86_64-pc-windows-msvc,
+            }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Validate release tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Expected a tag like v0.1.12 or v0.1.12-rc.1." >&2
+            exit 1
+          fi
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+      - name: Set up Rust
+        run: |
+          rustup default stable
+          rustup target add "${{ matrix.rust-target }}"
+      - name: Install Linux native dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsecret-1-dev pkg-config imagemagick patchelf
+      - name: Build Windows resource monitor
+        if: matrix.platform == 'win'
+        run: |
+          cargo build --locked --release --manifest-path native/resource-monitor/Cargo.toml --target "${{ matrix.rust-target }}"
+          echo "CADRO_DESKTOP_REUSE_RESOURCE_MONITOR=true" >> "$GITHUB_ENV"
+      - name: Install workspace dependencies
+        run: |
+          corepack enable pnpm
+          corepack pnpm install --frozen-lockfile
+      - name: Package desktop app
+        env:
+          BUILD_PLATFORM: ${{ matrix.platform }}
+          BUILD_ARCH: ${{ matrix.arch }}
+          BUILD_TARGET: ${{ matrix.target }}
+          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.CSC_KEY_PASSWORD || '' }}
+          APPLE_API_KEY: ${{ matrix.platform == 'mac' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_KEY_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_API_KEY_ID || '' }}
+          APPLE_API_ISSUER: ${{ matrix.platform == 'mac' && secrets.APPLE_API_ISSUER || '' }}
+          AZURE_TENANT_ID: ${{ matrix.platform == 'win' && secrets.AZURE_TENANT_ID || '' }}
+          AZURE_CLIENT_ID: ${{ matrix.platform == 'win' && secrets.AZURE_CLIENT_ID || '' }}
+          AZURE_CLIENT_SECRET: ${{ matrix.platform == 'win' && secrets.AZURE_CLIENT_SECRET || '' }}
+          AZURE_TRUSTED_SIGNING_ENDPOINT: ${{ matrix.platform == 'win' && secrets.AZURE_TRUSTED_SIGNING_ENDPOINT || '' }}
+          AZURE_TRUSTED_SIGNING_ACCOUNT_NAME: ${{ matrix.platform == 'win' && secrets.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME || '' }}
+          AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME: ${{ matrix.platform == 'win' && secrets.AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME || '' }}
+          AZURE_TRUSTED_SIGNING_PUBLISHER_NAME: ${{ matrix.platform == 'win' && secrets.AZURE_TRUSTED_SIGNING_PUBLISHER_NAME || '' }}
+        run: |
+          args=(--platform "$BUILD_PLATFORM" --arch "$BUILD_ARCH" --target "$BUILD_TARGET"
+            --build-version "${RELEASE_TAG#v}" --output-dir release-build)
+          if [[ "$BUILD_PLATFORM" == mac && -n "$CSC_LINK" && -n "$CSC_KEY_PASSWORD" ]]; then
+            args+=(--signed)
+            if [[ -n "$APPLE_API_KEY" && -n "$APPLE_API_KEY_ID" && -n "$APPLE_API_ISSUER" ]]; then
+              key_path="$(mktemp "$RUNNER_TEMP/cadro-notary.XXXXXX")"
+              trap 'rm -f "$key_path"' EXIT
+              printf '%s' "$APPLE_API_KEY" > "$key_path"
+              export APPLE_API_KEY="$key_path"
+            else
+              unset APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER
+            fi
+          elif [[ "$BUILD_PLATFORM" == win && -n "$AZURE_TENANT_ID" && -n "$AZURE_CLIENT_ID" &&
+                  -n "$AZURE_CLIENT_SECRET" && -n "$AZURE_TRUSTED_SIGNING_ENDPOINT" &&
+                  -n "$AZURE_TRUSTED_SIGNING_ACCOUNT_NAME" &&
+                  -n "$AZURE_TRUSTED_SIGNING_CERTIFICATE_PROFILE_NAME" &&
+                  -n "$AZURE_TRUSTED_SIGNING_PUBLISHER_NAME" ]]; then
+            args+=(--signed)
+          fi
+          pnpm dist:desktop:artifact "${args[@]}"
+      - name: Collect release files
+        env:
+          BUILD_PLATFORM: ${{ matrix.platform }}
+          BUILD_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir release-assets
+          shopt -s nullglob
+          packages=(release-build/*.{dmg,zip,AppImage,deb,exe})
+          (( ${#packages[@]} > 0 ))
+          cp "${packages[@]}" release-assets/
+          for metadata in release-build/*.{yml,blockmap}; do
+            name="${metadata##*/}"
+            [[ "$name" == builder-* ]] && continue
+            if [[ "$BUILD_PLATFORM" == mac && "$BUILD_ARCH" == x64 && "$name" == *-mac.yml ]]; then
+              name="${name%.yml}-x64.yml"
+            fi
+            cp "$metadata" "release-assets/$name"
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: release-assets/
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    runs-on: ubuntu-24.04
+    needs: package
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: desktop-*
+          path: release-assets
+          merge-multiple: true
+      - name: Merge macOS updater manifests
+        run: |
+          shopt -s nullglob
+          manifests=(release-assets/*-mac-x64.yml)
+          if (( ${#manifests[@]} == 0 )); then
+            echo "No macOS updater manifests to merge."
+            exit 0
+          fi
+          corepack pnpm install --frozen-lockfile
+          for x64 in "${manifests[@]}"; do
+            arm64="${x64%-x64.yml}.yml"
+            node scripts/merge-update-manifests.ts --platform mac "$arm64" "$x64" "$arm64"
+            rm "$x64"
+          done
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          else
+            flags=()
+            if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
+            gh release create "$RELEASE_TAG" release-assets/* --verify-tag --generate-notes "${flags[@]}"
+          fi

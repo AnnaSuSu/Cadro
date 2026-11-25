@@ -1,0 +1,3 @@
+name: Setup CI dependencies
+description: Install Vite+ and the workspace dependencies from cache.
+inputs:

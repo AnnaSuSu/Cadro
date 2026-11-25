@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.cadro.app</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Cadro</name>
+  <summary>Open-source workbench for coding agents</summary>
+  <developer id="dev.cadro">
+    <name>Cadro Contributors</name>
+  </developer>
+  <description>
+    <p>
+      Cadro runs your coding agents, organizes conversations by project,
+      and lets you review changes from desktop and web.
+    </p>
+  </description>
+  <launchable type="desktop-id">cadro.desktop</launchable>
+  <icon type="stock">cadro</icon>
+  <provides>
+    <binary>cadro</binary>
+  </provides>
+  <categories>
+    <category>Development</category>
+  </categories>
+</component>

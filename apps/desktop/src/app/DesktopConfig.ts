@@ -1,0 +1,68 @@
+import { OtlpHeadersFromString, OtlpProtocol } from "@cadro/shared/observability";
+import * as Config from "effect/Config";
+import * as ConfigProvider from "effect/ConfigProvider";
+import * as Option from "effect/Option";
+
+const trimNonEmptyOption = (value: string): Option.Option<string> => {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? Option.some(trimmed) : Option.none();
+};
+
+export const trimmedString = (name: string) =>
+  Config.String(name).pipe(Config.option, Config.map(Option.flatMap(trimNonEmptyOption)));
+
+const optionalBoolean = (name: string) =>
+  Config.Boolean(name).pipe(Config.option, Config.map(Option.getOrElse(() => false)));
+
+const commaSeparatedStrings = (name: string) =>
+  trimmedString(name).pipe(
+    Config.map(
+      Option.match({
+        onNone: () => [],
+        onSome: (value) =>
+          value
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0),
+      }),
+    ),
+  );
+
+const compactEnv = (env: Readonly<Record<string, string | undefined>>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+  );
+
+export const DesktopConfig = Config.all({
+  appDataDirectory: trimmedString("APPDATA"),
+  xdgConfigHome: trimmedString("XDG_CONFIG_HOME"),
+  xdgDataHome: trimmedString("XDG_DATA_HOME"),
+  t3Home: trimmedString("CADRO_HOME"),
+  devServerUrl: Config.URL("VITE_DEV_SERVER_URL").pipe(Config.option),
+  appUserModelIdOverride: trimmedString("CADRO_DESKTOP_APP_USER_MODEL_ID"),
+  devRemoteT3ServerEntryPath: trimmedString("CADRO_DEV_REMOTE_T3_SERVER_ENTRY_PATH"),
+  configuredBackendPort: Config.Port("CADRO_PORT").pipe(Config.option),
+  commitHashOverride: trimmedString("CADRO_COMMIT_HASH"),
+  desktopLanHostOverride: trimmedString("CADRO_DESKTOP_LAN_HOST"),
+  desktopHttpsEndpointUrls: commaSeparatedStrings("CADRO_DESKTOP_HTTPS_ENDPOINTS"),
+  otlpTracesUrl: trimmedString("CADRO_OTLP_TRACES_URL"),
+  otlpMetricsUrl: trimmedString("CADRO_OTLP_METRICS_URL"),
+  otlpLogsUrl: trimmedString("CADRO_OTLP_LOGS_URL"),
+  otlpExportIntervalMs: Config.Int("CADRO_OTLP_EXPORT_INTERVAL_MS").pipe(
+    Config.withDefault(10_000),
+  ),
+  otlpHeaders: Config.schema(OtlpHeadersFromString, "CADRO_OTLP_HEADERS").pipe(Config.option),
+  otlpProtocol: Config.schema(OtlpProtocol, "CADRO_OTLP_PROTOCOL").pipe(
+    Config.withDefault("http/json"),
+  ),
+  desktopLauncherPath: trimmedString("CADRO_DESKTOP_LAUNCHER_PATH"),
+  appImagePath: trimmedString("APPIMAGE"),
+  disableAutoUpdate: optionalBoolean("CADRO_DISABLE_AUTO_UPDATE"),
+  mockUpdates: optionalBoolean("CADRO_DESKTOP_MOCK_UPDATES"),
+  mockUpdateServerPort: Config.Port("CADRO_DESKTOP_MOCK_UPDATE_SERVER_PORT").pipe(
+    Config.withDefault(3000),
+  ),
+});
+
+export const layerTest = (env: Readonly<Record<string, string | undefined>>) =>
+  ConfigProvider.layer(ConfigProvider.fromEnv({ env: compactEnv(env) }));
