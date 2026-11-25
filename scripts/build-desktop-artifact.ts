@@ -2725,6 +2725,8 @@ const countPayloadFiles = Effect.fn("desktopArtifact.countPayloadFiles")(functio
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const pendingDirectories = [root];
+  const cacheDirectory = path.join(root, "resources", "server-compile-cache");
+  let bytecodeFiles = 0;
   let count = 0;
 
   while (pendingDirectories.length > 0) {
@@ -2738,11 +2740,12 @@ const countPayloadFiles = Effect.fn("desktopArtifact.countPayloadFiles")(functio
         pendingDirectories.push(entryPath);
       } else if (stat.type === "File") {
         count += 1;
+        if (directory === cacheDirectory && /^[0-9a-f]{8}$/.test(entry)) bytecodeFiles += 1;
       }
     }
   }
 
-  return count;
+  return { count, bytecodeFiles };
 });
 
 export const verifyWindowsPrimaryFffNativeLoad = Effect.fn(
@@ -2865,7 +2868,6 @@ export const validateWindowsPackagedPayload = Effect.fn(
 }) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const fileLimit = input.fileLimit ?? WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT;
   const isFile = (filePath: string) =>
     fs.stat(filePath).pipe(
       Effect.map((stat) => stat.type === "File"),
@@ -3052,13 +3054,16 @@ export const validateWindowsPackagedPayload = Effect.fn(
     }
   }
 
-  const fileCount = yield* countPayloadFiles(packagedAppDir);
-  if (fileCount > fileLimit) {
+  const { count: fileCount, bytecodeFiles } = yield* countPayloadFiles(packagedAppDir);
+  // V8 writes a cache file per compiled module. Keep the non-cache payload budget intact.
+  const allowedFiles =
+    input.fileLimit ?? WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT + Math.min(bytecodeFiles, 48);
+  if (fileCount > allowedFiles) {
     return yield* new WindowsPackagedPayloadValidationError({
       reason: "file-limit-exceeded",
       packagedAppDir,
       fileCount,
-      fileLimit,
+      fileLimit: allowedFiles,
     });
   }
 

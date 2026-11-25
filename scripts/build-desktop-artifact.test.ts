@@ -960,6 +960,24 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         assert.equal(result.packagedAppDir, fixture.packagedAppDir);
         assert.deepStrictEqual(result.unpackedFiles, ["node_modules/native/addon.node"]);
         assert.isBelow(result.fileCount, WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT);
+        const cache = path.join(fixture.packagedAppDir, "resources", "server-compile-cache");
+        yield* fs.makeDirectory(cache, { recursive: true });
+        for (let i = result.fileCount; i < WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT; i++) {
+          yield* fs.writeFileString(path.join(fixture.packagedAppDir, `runtime-${i}`), "");
+        }
+        yield* fs.writeFileString(path.join(cache, "e78ab104"), "");
+        const validate = () =>
+          validateWindowsPackagedPayload({
+            stageDistDir: fixture.stageDistDir,
+            appExecutableName: fixture.appExecutableName,
+            targetArch: "x64",
+            appVersion: WINDOWS_PAYLOAD_FIXTURE_VERSION,
+          });
+        assert.equal((yield* validate()).fileCount, WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT + 1);
+        yield* fs.writeFileString(path.join(cache, "unexpected.dll"), "");
+        const overBudget = yield* validate().pipe(Effect.flip);
+        assert.instanceOf(overBudget, WindowsPackagedPayloadValidationError);
+        assert.equal(overBudget.reason, "file-limit-exceeded");
         assert.deepStrictEqual(secondAsar, firstAsar);
       }),
     ).pipe(Effect.provideService(HostProcess.Platform, "linux")),
