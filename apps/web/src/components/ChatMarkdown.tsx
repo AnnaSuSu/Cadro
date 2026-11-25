@@ -237,6 +237,7 @@ import { reportMarkdownActionFailure } from "./chat/markdownActionFailure";
 const isAssetNotFoundError = Schema.is(AssetWorkspaceAssetNotFoundError);
 
 interface ChatMarkdownProps {
+  typography?: "chat" | "page";
   renderInsights?: boolean;
   /** Compact markdown transforms remove blocks before rendering inside a label. */
   inline?: boolean;
@@ -2073,6 +2074,7 @@ const MarkdownSource = memo(function MarkdownSource({
 
 function ChatMarkdown({
   text,
+  typography = "chat",
   className,
   inline = false,
   lineBreaks = false,
@@ -2106,8 +2108,9 @@ function ChatMarkdown({
       ref={bindMarkdownRef}
       className={cn(
         "chat-markdown w-full min-w-0 [overflow-wrap:anywhere] [word-break:break-word]",
+        !inline && (typography === "page" ? "text-(length:--font-size-content)" : "text-sm"),
         !inline &&
-          "font-(family-name:--font-content,var(--font-sans)) text-(length:--font-size-content) leading-relaxed text-foreground/[calc(90%+var(--appearance-contrast-boost)/10)]",
+          "font-(family-name:--font-content,var(--font-sans)) leading-relaxed text-foreground/[calc(90%+var(--appearance-contrast-boost)/10)]",
         className,
       )}
       data-streaming={componentState.isStreaming ? "" : undefined}

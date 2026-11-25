@@ -15,7 +15,21 @@
   }
 }
 
+/* Match the optical size of Han text to the system UI at small interface sizes.
+   Limiting the face to Han and CJK punctuation preserves Latin and emoji metrics. */
+@font-face {
+  font-family: "Cadro Han SC";
+  src: local("PingFangSC-Regular");
+  font-weight: 100 600;
+  size-adjust: 94%;
+  unicode-range:
+    U+3000-303F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FE30-FE4F, U+FF01-FF60, U+FFE0-FFE6,
+    U+20000-2FA1F, U+30000-323AF;
+}
+
 :root {
+  --font-system-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-default-sans: var(--font-system-sans);
   --app-scrollbar-width: 6px;
   --appearance-contrast-base: 100%;
   --appearance-contrast-boost: 0%;
@@ -63,7 +77,7 @@
   --font-size-interface: 14px;
   --font-size-content: 15px;
   --font-size-code: 12px;
-  --font-size-prompt: var(--font-size-content);
+  --font-size-prompt: var(--font-size-interface);
   --font-size-prompt-touch: max(var(--font-size-prompt, 1rem), 16px);
   /* Horizontal gutter shared by the page header and the chat column, clear of
      the device's safe area. */
@@ -98,11 +112,15 @@
   );
 }
 
+:root:is(:lang(en), [lang="zh" i], :lang(zh-Hans), :lang(zh-CN), :lang(zh-SG)) {
+  --font-default-sans: "Cadro Han SC", var(--font-system-sans);
+}
+
 /* The font tokens are declared outside the inline theme so utilities reference
    the variables and Settings -> Appearance can override them at runtime. The
    default stacks are mirrored in `appearanceFonts.ts`. */
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: var(--font-default-sans);
   --text-xs: calc(var(--font-size-interface) - 2px);
   --text-caption: calc(var(--font-size-interface) - 1px);
   --text-sm: var(--font-size-interface);
@@ -2176,7 +2194,7 @@ code {
   border-collapse: collapse;
   overflow-wrap: normal;
   word-break: normal;
-  font-size: calc(var(--font-size-content) - 1px);
+  font-size: max(var(--font-size-code), 0.875em);
 }
 
 /* Top-aligned so wrapped rows share a first line, and the outer columns sit

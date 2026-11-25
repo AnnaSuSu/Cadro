@@ -115,6 +115,7 @@ export default function NotebookPreview(props: {
               </div>
               {cell.kind === "markdown" ? (
                 <ChatMarkdown
+                  typography="page"
                   text={cell.source}
                   cwd={undefined}
                   parseRawHtml={false}

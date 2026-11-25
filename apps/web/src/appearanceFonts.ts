@@ -77,7 +77,7 @@ export function applyAppearanceFontVariables(
   preferences: AppearanceFontPreferences,
 ): void {
   const families: ReadonlyArray<readonly [variable: string, custom: string, fallback: string]> = [
-    ["--font-sans", preferences.sans, DEFAULT_SANS_FONT_STACK],
+    ["--font-sans", preferences.sans, "var(--font-default-sans)"],
     ["--font-content", preferences.content, "var(--font-sans)"],
     ["--font-mono", preferences.code, DEFAULT_CODE_FONT_STACK],
     ["--font-composer", preferences.separate ? preferences.composer : "", "var(--font-sans)"],
@@ -119,7 +119,7 @@ export function applyAppearanceFontVariables(
     "--font-size-prompt",
     preferences.separate
       ? `${clampPromptFontSize(preferences.sizePrompt)}px`
-      : "var(--font-size-content)",
+      : "var(--font-size-interface)",
   );
   const code = clampCodeFontSize(preferences.sizeCode);
   root.style.setProperty("--font-size-code", `${code}px`);

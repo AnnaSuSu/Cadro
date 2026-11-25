@@ -5,6 +5,14 @@ appearance or stay in light or dark mode. To use different themes for light and 
 the corresponding preview within each theme. Appearance preferences are saved separately on each
 device or browser.
 
+Open the workspace menu and choose **Appearance** to switch between System, Light, and Dark.
+The check mark shows the active mode.
+
+In **Settings → Appearance**, the interface size also sets the chat and composer size (14 px by default).
+The content font applies to chats and Markdown pages. Its size controls pages (15 px by default).
+Tables use 87.5% of the surrounding text size, down to the configured code size (12 px by default).
+The advanced composer preference can set a separate size for typing.
+
 On web and desktop, use **Change theme** in the command palette to select a theme without leaving chat.
 Press **Cmd+Option+A** on macOS or **Ctrl+Alt+A** on Windows/Linux to open the theme picker directly.
 Use **Change appearance** in the command palette to choose System, Light, or Dark independently of

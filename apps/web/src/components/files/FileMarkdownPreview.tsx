@@ -26,6 +26,7 @@ export function FileMarkdownPreview(props: {
 
   return (
     <ChatMarkdown
+      typography="page"
       text={maskMarkdownFrontmatter(props.text)}
       cwd={props.cwd}
       imageBaseDir={imageBaseDir}

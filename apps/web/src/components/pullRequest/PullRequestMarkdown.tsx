@@ -124,6 +124,7 @@ function PullRequestBodySegmentView({
   if (segment.kind === "markdown" || segment.media === "image") {
     return (
       <ChatMarkdown
+        typography="page"
         text={segment.kind === "markdown" ? segment.text : `![](<${segment.url}>)`}
         cwd={cwd}
         threadRef={threadRef}

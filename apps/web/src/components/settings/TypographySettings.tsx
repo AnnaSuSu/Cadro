@@ -77,7 +77,7 @@ function InterfaceFontRow() {
     <FontFamilySettingsRow
       {...searchableSetting("interface-font")}
       resetLabel={gt("Reset interface font to default")}
-      description={gt("Sidebar, navigation, settings, and controls.")}
+      description={gt("Base size for the interface and chat messages.")}
       defaultFamily={defaults.sans}
       defaultValue={DEFAULT_UNIFIED_SETTINGS.fontFamilySans}
       value={settings.fontFamilySans}
@@ -109,7 +109,7 @@ function ContentFontRow() {
     <FontFamilySettingsRow
       {...searchableSetting("content-font")}
       resetLabel={gt("Reset content font to default")}
-      description={gt("Chat messages and rendered Markdown.")}
+      description={gt("Font for chats and pages. The size applies to pages.")}
       defaultFamily={gt("Same as interface font")}
       defaultValue={DEFAULT_UNIFIED_SETTINGS.fontFamilyContent}
       value={settings.fontFamilyContent}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import "~/index.css";
-import { applyAppearanceFontVariables } from "./appearanceFonts";
+import { applyAppearanceFontVariables, DEFAULT_SANS_FONT_STACK } from "./appearanceFonts";
 
 function renderedFontSize(style: (probe: HTMLElement) => void): string {
   const probe = document.createElement("div");
@@ -26,7 +26,59 @@ const touchComposerFontSize = () =>
   });
 
 describe("applyAppearanceFontVariables", () => {
-  it("uses the content size for writing until a separate prompt size is selected", () => {
+  it("fits Simplified Chinese glyphs without resizing Latin text or overriding a chosen font", async () => {
+    const root = document.documentElement;
+    const language = root.getAttribute("lang");
+    const style = root.getAttribute("style");
+    const probe = document.createElement("span");
+    probe.style.cssText = "position:absolute; white-space:pre; font-size:14px";
+    document.body.append(probe);
+    const width = (text: string, family: string) => {
+      probe.style.fontFamily = family;
+      probe.textContent = text;
+      return probe.getBoundingClientRect().width;
+    };
+    try {
+      root.lang = "zh";
+      root.style.removeProperty("--font-sans");
+      const han = "检查服务器状态";
+      const available = await document.fonts.load('14px "Cadro Han SC"', han).catch(() => []);
+      expect(width("TechSpar ak47", "var(--font-sans)")).toBe(
+        width("TechSpar ak47", DEFAULT_SANS_FONT_STACK),
+      );
+      if (available.length > 0) {
+        const nativeWidth = width(han, '"PingFang SC"');
+        expect(width(han, "var(--font-sans)") / nativeWidth).toBeCloseTo(0.94, 2);
+        applyAppearanceFontVariables(root, {
+          sans: "PingFang SC",
+          content: "",
+          code: "",
+          composer: "",
+          sizeInterface: 14,
+          sizeContent: 15,
+          sizeCode: 12,
+          sizePrompt: 14,
+          smoothing: true,
+          separate: false,
+        });
+        expect(width(han, "var(--font-sans)")).toBe(nativeWidth);
+      }
+      root.style.removeProperty("--font-sans");
+      probe.style.fontFamily = "var(--font-sans)";
+      root.lang = "en";
+      expect(getComputedStyle(probe).fontFamily).toContain("Cadro Han SC");
+      root.lang = "ja";
+      expect(getComputedStyle(probe).fontFamily).not.toContain("Cadro Han SC");
+    } finally {
+      probe.remove();
+      if (language === null) root.removeAttribute("lang");
+      else root.lang = language;
+      if (style === null) root.removeAttribute("style");
+      else root.setAttribute("style", style);
+    }
+  });
+
+  it("uses the interface size for writing until a separate prompt size is selected", () => {
     const root = document.documentElement;
     const style = root.getAttribute("style");
     const preferences = {
@@ -42,8 +94,8 @@ describe("applyAppearanceFontVariables", () => {
     };
     try {
       applyAppearanceFontVariables(root, { ...preferences, separate: false });
-      expect(composerFontSize()).toBe("15px");
-      expect(touchComposerFontSize()).toBe("16px");
+      expect(composerFontSize()).toBe("20px");
+      expect(touchComposerFontSize()).toBe("20px");
 
       applyAppearanceFontVariables(root, { ...preferences, separate: true });
       expect(composerFontSize()).toBe("14px");

@@ -317,6 +317,7 @@ export function AttachmentFilePreview(props: {
     ) : kind === "markdown" && rendered ? (
       <ScrollArea className="min-h-0 flex-1">
         <ChatMarkdown
+          typography="page"
           text={maskMarkdownFrontmatter(content.text)}
           cwd={undefined}
           className="mx-auto max-w-4xl px-6 py-5"
