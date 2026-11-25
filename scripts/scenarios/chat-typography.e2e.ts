@@ -48,9 +48,10 @@ test(
     await cadro.open("/settings/appearance");
     const content = screen.getByRole("combobox", "正文字号");
     await content.waitFor();
-    await browser.evaluate(() =>
-      document.querySelector('[aria-label="正文字号"]')?.scrollIntoView({ block: "center" }),
-    );
+    await browser.evaluate(() => {
+      document.querySelector('[aria-label="正文字号"]')?.scrollIntoView({ block: "center" });
+      return null;
+    });
     await app.screenshot("typography-settings");
     await content.tap();
     await screen.getByRole("option", "18 px", { exact: true }).tap();
