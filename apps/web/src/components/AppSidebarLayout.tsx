@@ -479,13 +479,7 @@ export function AppSidebarLayout({
       >
         {showSidebar ? (
           <>
-            <CadroActivityRail
-              sidebarControl={
-                settingsOpen ? undefined : <div aria-hidden className="size-9 shrink-0" />
-              }
-              clearTrafficLights={clearTrafficLights}
-              className="z-20"
-            />
+            <CadroActivityRail clearTrafficLights={clearTrafficLights} className="z-20" />
             <Activity mode={settingsOpen ? "hidden" : "visible"}>
               <Sidebar
                 side="left"

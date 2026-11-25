@@ -10,6 +10,11 @@ import { Spinner } from "./spinner";
 
 const Menu = MenuPrimitive.Root;
 
+const panelItemClass =
+  "in-data-[menu-surface=panel]:rounded-lg sm:in-data-[menu-surface=panel]:min-h-[29px]";
+const panelActionClass =
+  "in-data-[menu-surface=panel]:grid in-data-[menu-surface=panel]:grid-cols-[14px_minmax(0,1fr)_auto]";
+
 function MenuTrigger({ className, children, ...props }: MenuPrimitive.Trigger.Props) {
   return (
     <MenuPrimitive.Trigger className={className} data-slot="menu-trigger" {...props}>
@@ -29,6 +34,7 @@ function MenuPopup({
   anchor,
   keepMounted = false,
   width = "default",
+  surface = "default",
   ...props
 }: MenuPrimitive.Popup.Props & {
   align?: MenuPrimitive.Positioner.Props["align"];
@@ -39,6 +45,7 @@ function MenuPopup({
   anchor?: MenuPrimitive.Positioner.Props["anchor"];
   keepMounted?: boolean;
   width?: "default" | "content";
+  surface?: "default" | "panel";
 }) {
   return (
     <MenuPrimitive.Portal keepMounted={keepMounted}>
@@ -62,12 +69,22 @@ function MenuPopup({
             "motion-safe:transition-[opacity,scale] motion-safe:duration-150 motion-safe:ease-out motion-safe:data-starting-style:scale-98 motion-safe:data-starting-style:opacity-0 motion-safe:data-ending-style:opacity-0",
             "max-w-[calc(100vw-2rem)]",
             width === "content" ? "w-max min-w-0" : "min-w-[min(10rem,calc(100vw-2rem))]",
+            surface === "panel" &&
+              "rounded-2xl shadow-[0_5px_18px_rgb(0_0_0/9%)] dark:shadow-[0_5px_18px_rgb(0_0_0/30%)]",
             className,
           )}
+          data-menu-surface={surface}
           data-slot="menu-popup"
           {...props}
         >
-          <div className="max-h-(--available-height) w-full overflow-y-auto p-1">{children}</div>
+          <div
+            className={cn(
+              "max-h-(--available-height) w-full overflow-y-auto",
+              surface === "panel" ? "p-1.5" : "p-1",
+            )}
+          >
+            {children}
+          </div>
         </MenuPrimitive.Popup>
       </MenuPrimitive.Positioner>
     </MenuPrimitive.Portal>
@@ -140,6 +157,8 @@ function MenuItem({
             className: "h-auto min-h-7 w-full sm:text-xs",
           }),
         density === "touch" && "min-h-10 sm:min-h-10",
+        panelItemClass,
+        panelActionClass,
         className,
       )}
       data-density={density}
@@ -240,6 +259,7 @@ function MenuRadioItem({
     <MenuPrimitive.RadioItem
       className={cn(
         "[&_svg]:-mx-0.5 flex min-h-8 in-data-[side=none]:min-w-[calc(var(--anchor-width)+1.25rem)] cursor-pointer items-center rounded-sm px-2 py-1 text-base text-foreground outline-none data-checked:bg-foreground/[0.08] data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:opacity-64 sm:min-h-7 sm:text-sm [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        panelItemClass,
         className,
       )}
       data-slot="menu-radio-item"
@@ -342,6 +362,8 @@ function MenuSubTrigger({
         // Exclude the last SVG so leading-icon margin rules cannot remove the chevron's ms-auto alignment.
         "[&>svg:not(:last-child)]:-mx-0.5 flex min-h-8 cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-base text-foreground outline-none data-disabled:cursor-not-allowed data-disabled:pointer-events-none data-highlighted:bg-accent data-popup-open:bg-accent data-inset:ps-8 data-highlighted:text-accent-foreground data-popup-open:text-accent-foreground data-disabled:opacity-64 sm:min-h-7 sm:text-sm [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground [&>svg:not(:last-child):not([class*='opacity-'])]:opacity-80 [&_svg]:pointer-events-none [&>svg]:shrink-0",
         density === "touch" && "min-h-10 sm:min-h-10",
+        panelItemClass,
+        panelActionClass,
         className,
       )}
       data-density={density}
@@ -365,6 +387,7 @@ function MenuSubPopup({
   align?: MenuPrimitive.Positioner.Props["align"];
   sideOffset?: MenuPrimitive.Positioner.Props["sideOffset"];
   alignOffset?: MenuPrimitive.Positioner.Props["alignOffset"];
+  surface?: "default" | "panel";
 }) {
   const defaultAlignOffset = align !== "center" ? -5 : undefined;
 

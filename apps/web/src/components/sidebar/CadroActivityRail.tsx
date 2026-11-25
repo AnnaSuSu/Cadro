@@ -3,13 +3,15 @@ import { useGT } from "gt-react";
 import {
   ChartNoAxesColumnIcon,
   ClockIcon,
+  CircleDotIcon,
   FolderIcon,
   GitForkIcon,
   HomeIcon,
   KeyboardIcon,
+  PaletteIcon,
+  NetworkIcon,
   SettingsIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
 
 import { useTheme } from "../../hooks/useTheme";
 import { cn, isMacPlatform } from "../../lib/utils";
@@ -27,11 +29,15 @@ import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPr
 import {
   Menu,
   MenuGroup,
-  MenuGroupLabel,
   MenuItem,
   MenuPopup,
   MenuRadioGroup,
   MenuRadioItem,
+  MenuRadioItemIndicator,
+  MenuShortcut,
+  MenuSub,
+  MenuSubPopup,
+  MenuSubTrigger,
   MenuSeparator,
   MenuTrigger,
 } from "../ui/menu";
@@ -41,11 +47,9 @@ const railButtonClass =
   "flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-muted-foreground outline-none motion-safe:transition-colors motion-safe:duration-150 hover:bg-sidebar-row-hover active:bg-sidebar-row-active hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
 
 export function CadroActivityRail({
-  sidebarControl,
   clearTrafficLights = false,
   className,
 }: {
-  sidebarControl?: ReactNode;
   clearTrafficLights?: boolean;
   className?: string;
 }) {
@@ -90,7 +94,8 @@ export function CadroActivityRail({
           className="absolute inset-x-0 top-0 h-(--workspace-topbar-height) drag-region"
         />
       ) : null}
-      {sidebarControl}
+      {/* The shell positions its sidebar toggle over this row on pages that use it. */}
+      <div aria-hidden className="size-9 shrink-0" />
       {links.map(({ to, label, icon: Icon, ...options }) => {
         const active = "active" in options ? options.active : pathname === to;
         return (
@@ -178,6 +183,8 @@ function useWorkspaceHost() {
   return { host, connected, connecting, connectionLabel };
 }
 
+const workspaceMenuIcon = "size-3.5 text-foreground opacity-80";
+
 export function WorkspaceMenuPopup({ side }: { side: "right" | "bottom" }) {
   const gt = useGT();
   const navigate = useNavigate();
@@ -186,51 +193,85 @@ export function WorkspaceMenuPopup({ side }: { side: "right" | "bottom" }) {
   const { appearanceMode, setAppearanceMode } = useTheme();
   const settingsShortcut = isMacPlatform(navigator.platform) ? "⌘," : "Ctrl+,";
   return (
-    <MenuPopup side={side} align={side === "right" ? "end" : "start"} className="min-w-56">
-      <div className="px-2.5 py-1.5">
-        <div className="text-sm font-semibold">Cadro</div>
-        <div className="truncate text-xs text-muted-foreground">
-          {host?.label ?? connectionLabel}
+    <MenuPopup
+      side={side}
+      align={side === "right" ? "end" : "start"}
+      surface="panel"
+      className="w-[230px]"
+    >
+      <div className="flex items-center gap-1.5 px-1 py-1.5">
+        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-sidebar-foreground text-sidebar">
+          <CadroMark aria-hidden className="size-3.5" />
+        </span>
+        <div className="min-w-0 leading-tight">
+          <div className="text-sm font-medium">Cadro</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {host?.label ?? connectionLabel}
+          </div>
         </div>
       </div>
       <MenuSeparator />
       <MenuGroup>
-        <MenuGroupLabel>{gt("Appearance")}</MenuGroupLabel>
-        <MenuRadioGroup
-          value={appearanceMode}
-          onValueChange={(mode) => {
-            if (mode === "light" || mode === "dark" || mode === "system") setAppearanceMode(mode);
-          }}
-        >
-          <MenuRadioItem value="system">{gt("System")}</MenuRadioItem>
-          <MenuRadioItem value="light">{gt("Light")}</MenuRadioItem>
-          <MenuRadioItem value="dark">{gt("Dark")}</MenuRadioItem>
-        </MenuRadioGroup>
+        <MenuSub>
+          <MenuSubTrigger>
+            <PaletteIcon aria-hidden className={workspaceMenuIcon} />
+            {gt("Appearance")}
+          </MenuSubTrigger>
+          <MenuSubPopup surface="panel" sideOffset={3}>
+            <MenuRadioGroup
+              aria-label={gt("Appearance")}
+              value={appearanceMode}
+              onValueChange={(mode) => {
+                if (mode === "light" || mode === "dark" || mode === "system")
+                  setAppearanceMode(mode);
+              }}
+            >
+              {(
+                [
+                  ["system", gt("System")],
+                  ["light", gt("Light")],
+                  ["dark", gt("Dark")],
+                ] as const
+              ).map(([value, label]) => (
+                <MenuRadioItem key={value} value={value}>
+                  <span className="flex items-center justify-between">
+                    {label}
+                    <MenuRadioItemIndicator />
+                  </span>
+                </MenuRadioItem>
+              ))}
+            </MenuRadioGroup>
+          </MenuSubPopup>
+        </MenuSub>
+        <MenuItem onClick={() => void navigate({ to: "/settings" })}>
+          <SettingsIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Settings")}
+          <MenuShortcut>{settingsShortcut}</MenuShortcut>
+        </MenuItem>
+        <MenuItem onClick={() => void navigate({ to: "/settings/keybindings" })}>
+          <KeyboardIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Keyboard shortcuts")}
+        </MenuItem>
       </MenuGroup>
       <MenuSeparator />
-      <MenuItem onClick={() => void navigate({ to: "/settings/connections" })}>
-        {gt("Connections & Self-Host")}
-      </MenuItem>
-      <MenuItem onClick={() => void navigate({ to: "/settings" })}>
-        <SettingsIcon />
-        {gt("Settings")}
-        <kbd className="ml-auto text-xs text-muted-foreground">{settingsShortcut}</kbd>
-      </MenuItem>
-      <MenuItem onClick={() => void navigate({ to: "/settings/keybindings" })}>
-        <KeyboardIcon />
-        {gt("Keyboard shortcuts")}
-      </MenuItem>
-      {issuesSupported ? (
-        <MenuItem
-          onClick={() => void navigate({ to: "/issues", search: readIssueListPreferences() })}
-        >
-          {gt("Issues", { $context: "sidebar link to the list of issues" })}
+      <MenuGroup>
+        <MenuItem onClick={() => void navigate({ to: "/settings/connections" })}>
+          <NetworkIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Connections & Self-Host")}
         </MenuItem>
-      ) : null}
-      <MenuItem onClick={() => void navigate({ to: "/usage" })}>
-        <ChartNoAxesColumnIcon />
-        {gt("Usage")}
-      </MenuItem>
+        {issuesSupported ? (
+          <MenuItem
+            onClick={() => void navigate({ to: "/issues", search: readIssueListPreferences() })}
+          >
+            <CircleDotIcon aria-hidden className={workspaceMenuIcon} />
+            {gt("Issues", { $context: "sidebar link to the list of issues" })}
+          </MenuItem>
+        ) : null}
+        <MenuItem onClick={() => void navigate({ to: "/usage" })}>
+          <ChartNoAxesColumnIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Usage")}
+        </MenuItem>
+      </MenuGroup>
     </MenuPopup>
   );
 }
