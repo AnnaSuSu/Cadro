@@ -66,7 +66,6 @@ import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as Orchestrator from "./Orchestrator.ts";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import { projectedRowEncodedBytes } from "./threadHistoryPaging.ts";
-import { threadPullRequestsOf } from "../sourceControl/threadPullRequests.ts";
 import * as ProviderSessionManager from "./ProviderSessionManager.ts";
 import * as ThreadCommandExecutor from "./ThreadCommandExecutor.ts";
 import { DispatchModeLimit, exceededDispatchModeLimit } from "./DispatchModeLimit.ts";
@@ -620,7 +619,6 @@ function latestSteerableRun(
     .toSorted((left, right) => right.ordinal - left.ordinal)[0];
 }
 
-const SETTLE_AFTER_RUN_WAIT_MS = 24 * 60 * 60 * 1_000;
 const FORCE_STOP_REASON = "Force stopped by user";
 const FORCE_STOP_RELEASE_WAIT = "10 seconds";
 const isForceStopThreadError = Schema.is(OrchestrationV2ForceStopThreadError);

@@ -19,7 +19,6 @@ import {
 } from "@cadro/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 
 import {
   makeSubagentChildThread,
@@ -32,7 +31,6 @@ import {
 } from "@cadro/provider-core/server/subagentProjection";
 import * as IdAllocator from "@cadro/provider-core/server/IdAllocator";
 
-import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import * as ProjectionStore from "./ProjectionStore.ts";
 
 const parentThreadId = ThreadId.make("thread:subagent-snoozed-parent");

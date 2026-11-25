@@ -7,13 +7,10 @@ import {
   type OrchestrationV2Run,
   type OrchestrationV2RuntimeRequest,
   ProjectId,
-  ProviderDriverKind,
   ProviderInstanceId,
-  ProviderThreadId,
   RunId,
   RuntimeRequestId,
   ThreadId,
-  TurnItemId,
 } from "@cadro/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -100,41 +97,6 @@ const createRun = Effect.fn(function* (
     },
   });
   return runId;
-});
-
-const createItem = Effect.fn(function* (
-  threadId: ThreadId,
-  runId: RunId,
-  status: "idle" | "running" | "completed",
-  persistent = false,
-) {
-  const store = yield* ProjectionStore.ProjectionStoreV2;
-  yield* store.apply({
-    id: EventId.make(`event:item:${runId}`),
-    type: "turn-item.updated",
-    threadId,
-    occurredAt: old,
-    payload: {
-      id: TurnItemId.make(`item:${runId}`),
-      threadId,
-      runId,
-      nodeId: null,
-      providerThreadId: null,
-      providerTurnId: null,
-      nativeItemRef: null,
-      parentItemId: null,
-      ordinal: 1,
-      type: "dynamic_tool",
-      status,
-      title: null,
-      startedAt: old,
-      completedAt: status === "completed" ? old : null,
-      updatedAt: old,
-      toolName: "background",
-      input: persistent ? { persistent: true } : null,
-      output: null,
-    },
-  });
 });
 
 it.effect.each([["sql", layerSql]] as const)(

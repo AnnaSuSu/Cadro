@@ -18,7 +18,6 @@ import type {
   TerminalSummary,
   WorktreeCleanupRules,
   StorageCleanupReport,
-  ThreadId,
 } from "@cadro/contracts";
 import { writeFileStringAtomically } from "@cadro/shared/atomicWrite";
 import { resolveWorktreeCleanup } from "@cadro/shared/projectSettings";

@@ -15,7 +15,6 @@ import {
 import * as DateTime from "effect/DateTime";
 import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as Deferred from "effect/Deferred";
-import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
@@ -797,7 +796,6 @@ const waitFor = <A>(
 // regression: #24532 snooze while the thread's machine is offline
 describe("snooze while the environment is offline", () => {
   type Harness = Effect.Success<ReturnType<typeof makeHarness>>;
-  const target = { environmentId: ENVIRONMENT_ID, input: { threadId: THREAD_ID } };
   const snooze = {
     environmentId: ENVIRONMENT_ID,
     input: { threadId: THREAD_ID, snoozedUntil: "2099-01-01T00:00:00.000Z" },
