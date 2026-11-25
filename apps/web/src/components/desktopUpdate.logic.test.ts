@@ -4,6 +4,7 @@ import type { DesktopUpdateState } from "@cadro/contracts";
 import {
   canCheckForUpdate,
   getDesktopUpdateButtonTooltip,
+  getDesktopUpdateDisabledReason,
   getDesktopUpdateReleaseHistoryUrl,
   getDesktopUpdateActionError,
   getDesktopUpdateReleaseUrl,
@@ -31,6 +32,17 @@ const baseState: DesktopUpdateState = {
 };
 
 describe("desktop update button state", () => {
+  it("translates built-in disabled reasons and preserves administrator messages", () => {
+    const reason = "Automatic updates are not available because no update feed is configured.";
+    const state = { ...baseState, enabled: false, message: reason };
+    const translate = (message: string) => (message === reason ? "未配置更新源" : message);
+    expect(getDesktopUpdateDisabledReason(state, undefined, translate)).toBe("未配置更新源");
+    expect(
+      getDesktopUpdateDisabledReason({ ...state, message: "Contact IT" }, undefined, translate),
+    ).toBe("Contact IT");
+    expect(getDesktopUpdateDisabledReason(state, "由管理员管理", translate)).toBe("由管理员管理");
+  });
+
   it("keeps retry action available after a download error", () => {
     const state: DesktopUpdateState = {
       ...baseState,

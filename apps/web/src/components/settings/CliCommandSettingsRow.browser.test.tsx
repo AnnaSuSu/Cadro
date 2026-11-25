@@ -7,16 +7,16 @@ import { act, render, stubGlobal } from "../../../test/render";
 import { desktopCliCommandStateAtom } from "../../state/desktopCliCommand";
 import { CliCommandSettingsRow } from "./CliCommandSettingsRow";
 
-it("blocks installation behind another t3 without blocking removal of our installation", async () => {
+it("blocks installation behind another cadro without blocking removal of our installation", async () => {
   const state: DesktopCliCommandState = {
     supported: true,
     installedPath: null,
     onPath: false,
-    launcherPath: "/home/test/.t3/bin/t3",
+    launcherPath: "/home/test/.cadro/bin/cadro",
   };
   const getState = vi.fn(async (): Promise<DesktopCliCommandState> => ({
     ...state,
-    shadowedBy: "/usr/local/bin/t3",
+    shadowedBy: "/usr/local/bin/cadro",
   }));
   const uninstall = vi.fn(async () => state);
   using _bridge = stubGlobal("desktopBridge", {
@@ -37,11 +37,12 @@ it("blocks installation behind another t3 without blocking removal of our instal
   getState.mockResolvedValue(state);
   await act(() => registry.refresh(desktopCliCommandStateAtom));
   await expect.element(screen.getByRole("button", { name: "Install" })).toBeEnabled();
+  await expect.element(screen.getByText("Run cadro from any terminal.")).toBeVisible();
 
   getState.mockResolvedValue({
     ...state,
-    installedPath: "/home/test/.local/bin/t3",
-    shadowedBy: "/usr/local/bin/t3",
+    installedPath: "/home/test/.local/bin/cadro",
+    shadowedBy: "/usr/local/bin/cadro",
   });
   await act(() => registry.refresh(desktopCliCommandStateAtom));
   const remove = screen.getByRole("button", { name: "Remove" });

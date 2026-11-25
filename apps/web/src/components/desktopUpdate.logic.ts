@@ -259,17 +259,25 @@ export function canCheckForUpdate(state: DesktopUpdateState | null): boolean {
   );
 }
 
-/** `managedDenial` is this machine's policy refusing updates (`managedUpdatesDenial`); it wins. */
+// Desktop builds send these reasons in English over IPC. Custom policy messages are verbatim.
+const desktopDisabledMessages = new Set<string>([
+  msg("Updates are turned off on this machine."),
+  msg("Automatic updates are not available because no update feed is configured."),
+  msg("Automatic updates are only available in packaged production builds."),
+  msg("Automatic updates are disabled by the CADRO_DISABLE_AUTO_UPDATE setting."),
+  msg("Automatic updates on Linux require the AppImage or the .deb package."),
+]);
+
 export function getDesktopUpdateDisabledReason(
   state: Pick<DesktopUpdateState, "enabled" | "status" | "message"> | null,
   managedDenial?: string,
-  resolve: MessageResolver = m,
+  resolve: (message: string) => string = m,
 ): string | null {
   if (managedDenial !== undefined) return managedDenial;
   if (!state || (state.enabled && state.status !== "disabled")) return null;
-  return (
-    state.message?.trim() || resolve(msg("Automatic updates are not available in this build."))
-  );
+  const reason = state.message?.trim();
+  if (!reason) return resolve(msg("Automatic updates are not available in this build."));
+  return desktopDisabledMessages.has(reason) ? resolve(reason) : reason;
 }
 
 export function getDesktopUpdateIdleTooltip(

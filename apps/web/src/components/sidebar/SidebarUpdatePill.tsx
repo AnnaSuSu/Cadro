@@ -19,6 +19,7 @@ import {
   getArm64IntelBuildWarningDescription,
   getDesktopUpdateActionError,
   getDesktopUpdateButtonTooltip,
+  getDesktopUpdateDisabledReason,
   getDesktopUpdateDownloadedVersion,
   getDesktopUpdateIdleTooltip,
   getDesktopUpdateInstallConfirmationMessage,
@@ -351,7 +352,7 @@ function SidebarUpdateControl() {
             type: "error",
             title: gt("Could not check for updates"),
             description:
-              updatesDenial ??
+              getDesktopUpdateDisabledReason(result.state, updatesDenial, messages) ??
               result.state.message ??
               gt("Automatic updates are not available in this build."),
           }),
