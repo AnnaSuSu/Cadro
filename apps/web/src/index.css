@@ -1083,8 +1083,8 @@
   --placeholder: var(--muted-foreground);
   --secondary-label: var(--muted-foreground);
   --icon-muted: var(--muted-foreground);
-  --message-surface: #f4f4f5;
-  --message-foreground: var(--foreground);
+  --message-surface: #e8f3fe;
+  --message-foreground: #0c264a;
   --message-action: var(--primary);
   --message-action-foreground: var(--primary-foreground);
   --message-action-hover: color-mix(in srgb, var(--primary) 90%, var(--background));
@@ -1158,6 +1158,7 @@
     --accent: #26262c;
     --accent-foreground: #ececef;
     --message-surface: #232329;
+    --message-foreground: var(--foreground);
     --error: color-mix(in srgb, var(--color-red-500) 90%, var(--color-white));
     --error-foreground: var(--color-red-400);
     --tool-error-icon: #fca5a5;
@@ -2057,8 +2058,18 @@ code {
   font-size: var(--font-size-code);
 }
 
+:where(:root:not([data-theme-id]), :root[data-theme-id="cadro"])
+  [data-user-message-bubble].bg-message {
+  @variant light {
+    --user-message-code-background: #d5dfe9;
+  }
+}
+
 .chat-markdown.user-message-markdown :not(pre) > code {
-  background: color-mix(in srgb, var(--contrast-message-foreground) 10%, transparent);
+  background: var(
+    --user-message-code-background,
+    color-mix(in srgb, var(--contrast-message-foreground) 10%, transparent)
+  );
   color: var(--contrast-message-foreground);
 }
 

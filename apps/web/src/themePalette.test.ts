@@ -655,7 +655,7 @@ describe("context chip colors", () => {
 
   it("reads at 5:1 on the standard surfaces as index.css paints them", () => {
     const painted = {
-      light: ["#ffffff", "#f7f7f8", "#f4f4f5"],
+      light: ["#ffffff", "#f7f7f8", "#e8f3fe"],
       dark: ["#19191c", "#1e1e22", "#222227", "#232329"],
     } as const;
     const properties = new Map<string, string>();
