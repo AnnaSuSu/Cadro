@@ -903,6 +903,7 @@ interface StagePackageJson {
   readonly description: string;
   readonly license: string;
   readonly author: string;
+  readonly homepage: string;
   readonly main: string;
   readonly build: Record<string, unknown>;
   readonly dependencies: Record<string, unknown>;
@@ -3406,6 +3407,7 @@ const buildDesktopArtifactUnlocked = Effect.fn("buildDesktopArtifactUnlocked")(f
       "Cadro is an open-source desktop app for coding agents. Work with your existing agent subscriptions, review code changes, and run commands in your projects. Connect from desktop or web to continue working remotely.",
     license: "MIT",
     author: "Cadro Contributors",
+    homepage: "https://github.com/AnnaSuSu/Cadro",
     main: "apps/desktop/dist-electron/boot.cjs",
     build: yield* createBuildConfig(
       options.platform,
