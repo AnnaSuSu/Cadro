@@ -120,13 +120,14 @@ describe("shareDevServer", () => {
 
   it.effect("explains a recognized serve failure without quoting stderr", () =>
     Effect.gen(function* () {
+      const privateDetail = "TEST_ONLY_PRIVATE_STDERR";
       const error: DevShareError = yield* shareDevServer({ webPort: 5788 }).pipe(
         Effect.provide(
           spawnerLayer({
             off: { exitCode: 0 },
             serve: {
               exitCode: 1,
-              stderr: "permission denied for tskey-auth-secret-token-value",
+              stderr: `permission denied for ${privateDetail}`,
             },
           }),
         ),
@@ -137,7 +138,7 @@ describe("shareDevServer", () => {
       assert.equal(error.stage, "serve");
       assert.include(error.message, "permission denied");
       assert.include(error.message, "elevated privileges");
-      assert.notInclude(error.message, "tskey-auth-secret-token-value");
+      assert.notInclude(error.message, privateDetail);
     }),
   );
 

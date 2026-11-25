@@ -73,8 +73,9 @@ const scopes: Record<string, McpInvocationContext.McpInvocationScope> = {
   },
 };
 
-// The Standard Webhooks example secret: base64 of 24 bytes.
-const secret = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw";
+// Public test vector from standard-webhooks/standard-webhooks, libraries/javascript/src/webhook.test.ts.
+const referenceKeyBase64 = "MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw";
+const secret = `whsec_${referenceKeyBase64}`;
 
 /** The Standard Webhooks check a receiver runs: any `v1,` signature over id, timestamp and body. */
 const signedBy = Effect.fnUntraced(function* (
