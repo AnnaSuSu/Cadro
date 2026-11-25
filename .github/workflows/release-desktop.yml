@@ -185,6 +185,13 @@ jobs:
             node scripts/merge-update-manifests.ts --platform mac "$arm64" "$x64" "$arm64"
             rm "$x64"
           done
+      - name: Generate installer checksums
+        working-directory: release-assets
+        run: |
+          shopt -s nullglob
+          installers=(*.dmg *.zip *.AppImage *.deb *.exe)
+          (( ${#installers[@]} > 0 ))
+          sha256sum -- "${installers[@]}" > SHA256SUMS
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

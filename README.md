@@ -11,6 +11,10 @@ Cadro is an open-source, self-hostable workbench for running multiple coding age
 - **Cloudflare Pages + `cloudflared` Tunnel.** Serve the static web client on Pages, and connect it to your own backend over HTTPS and WebSockets. The backend runs agents and keeps project files and session state on your machine. Tailscale and LAN connections work directly.
 - **Open Desktop Self-Build.** Build the Electron app and package macOS, Linux, and Windows installers from source without a signing account.
 
+## Download Cadro
+
+Choose the installer for your operating system and processor from the [latest desktop release](https://github.com/AnnaSuSu/Cadro/releases/latest). On macOS, choose `arm64` for Apple silicon or `x64` for Intel.
+
 ## Run locally
 
 From this repository with Node.js 24.10+ and Corepack installed, run:
