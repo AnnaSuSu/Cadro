@@ -1,6 +1,6 @@
 {
   "name": "cadro",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "license": "MIT",
   "bin": {
     "cadro": "./dist/bin.mjs"
