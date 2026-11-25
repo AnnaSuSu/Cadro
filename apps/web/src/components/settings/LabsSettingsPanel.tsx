@@ -1,25 +1,25 @@
 import { Link } from "@tanstack/react-router";
 import {
-DEFAULT_WORKFLOW_SKIPPED_RUNS_KEPT,
-MAX_WORKFLOW_SKIPPED_RUNS_KEPT,
+  DEFAULT_WORKFLOW_SKIPPED_RUNS_KEPT,
+  MAX_WORKFLOW_SKIPPED_RUNS_KEPT,
 } from "@cadro/contracts";
-import { T,useGT } from "gt-react";
+import { T, useGT } from "gt-react";
 
-import { NumberField,NumberFieldGroup,NumberFieldInput } from "../ui/number-field";
+import { NumberField, NumberFieldGroup, NumberFieldInput } from "../ui/number-field";
 import { Switch } from "../ui/switch";
 import { commitNumberFieldOnEnter } from "./commitNumberFieldOnEnter";
 import { ScopedSwitch } from "./ScopedSwitch";
 import {
-SettingResetButton,
-SettingsPageContainer,
-SettingsRow,
-SettingsSection,
+  SettingResetButton,
+  SettingsPageContainer,
+  SettingsRow,
+  SettingsSection,
 } from "./settingsLayout";
 import { useSearchableSetting } from "./settingsSearch";
 import {
-useScopedSettings,
-useScopedSettingsMixed,
-useUpdateScopedSettings,
+  useScopedSettings,
+  useScopedSettingsMixed,
+  useUpdateScopedSettings,
 } from "./useScopedSettings";
 import { useSettingsScope } from "./SettingsScopeContext";
 

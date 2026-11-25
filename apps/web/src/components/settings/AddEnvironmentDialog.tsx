@@ -1,17 +1,14 @@
 import { thrownErrorMessage } from "@cadro/client-runtime/errors";
 import { m } from "~/i18n/messages";
 import { pipe } from "effect/Function";
-import { ChevronsLeftRightEllipsisIcon,PlusIcon,TerminalIcon } from "lucide-react";
+import { ChevronsLeftRightEllipsisIcon, PlusIcon, TerminalIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
-import { type KeyboardEvent,type ReactNode,useEffect,useRef,useState } from "react";
-import { T,useGT,useMessages,Var } from "gt-react";
+import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { T, useGT, useMessages, Var } from "gt-react";
+import { type DesktopDiscoveredSshHost, type DesktopSshEnvironmentTarget } from "@cadro/contracts";
 import {
-type DesktopDiscoveredSshHost,
-type DesktopSshEnvironmentTarget,
-} from "@cadro/contracts";
-import {
-isAtomCommandInterrupted,
-squashAtomCommandFailure,
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
 } from "@cadro/client-runtime/state/runtime";
 import * as Option from "effect/Option";
 
@@ -20,48 +17,48 @@ import { formatDesktopSshTarget } from "./EnvironmentRow";
 import { Input } from "../ui/input";
 import { CommandShortcut } from "../ui/command";
 import {
-Autocomplete,
-AutocompleteEmpty,
-AutocompleteInput,
-AutocompleteItem,
-AutocompleteList,
-AutocompletePopup,
+  Autocomplete,
+  AutocompleteEmpty,
+  AutocompleteInput,
+  AutocompleteItem,
+  AutocompleteList,
+  AutocompletePopup,
 } from "../ui/autocomplete";
 import {
-Dialog,
-DialogDescription,
-DialogHeader,
-DialogPanel,
-DialogPopup,
-DialogTitle,
-DialogTrigger,
+  Dialog,
+  DialogDescription,
+  DialogHeader,
+  DialogPanel,
+  DialogPopup,
+  DialogTitle,
+  DialogTrigger,
 } from "../ui/dialog";
-import { stackedThreadToast,toastManager } from "../ui/toast";
-import { Tooltip,TooltipPopup,TooltipTrigger } from "../ui/tooltip";
-import { Alert,AlertDescription } from "../ui/alert";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { AnimatedHeight } from "../AnimatedHeight";
 import {
-connectPairing as connectPairingAtom,
-connectSshEnvironment as connectSshEnvironmentAtom,
+  connectPairing as connectPairingAtom,
+  connectSshEnvironment as connectSshEnvironmentAtom,
 } from "~/connection/onboarding";
 import { useEnvironmentQuery } from "~/state/query";
-import { desktopSshHostsStateAtom,filterDiscoveredSshHosts } from "~/state/desktopSshHosts";
+import { desktopSshHostsStateAtom, filterDiscoveredSshHosts } from "~/state/desktopSshHosts";
 import { type EnvironmentPresentation } from "~/state/environments";
 import type { AddEnvironmentPrefill } from "~/state/linkedThreadView";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 import {
-resolveShortcutCommand,
-shortcutLabelForCommand,
-threadJumpCommandForIndex,
-threadJumpIndexFromCommand,
+  resolveShortcutCommand,
+  shortcutLabelForCommand,
+  threadJumpCommandForIndex,
+  threadJumpIndexFromCommand,
 } from "../../keybindings";
 import {
-parseManualDesktopSshTarget,
-parsePairingUrlFields,
-parseRemotePairingFields,
-formatDesktopSshConnectionError,
+  parseManualDesktopSshTarget,
+  parsePairingUrlFields,
+  parseRemotePairingFields,
+  formatDesktopSshConnectionError,
 } from "./ConnectionsSettings.logic";
 
 const SSH_PROTOCOL_NAME = "SSH";

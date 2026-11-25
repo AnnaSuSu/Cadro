@@ -598,7 +598,7 @@ export function WorktreeCleanupSection() {
   const messages = useMessages();
   const setting = useSearchableSetting();
   const gt = useGT();
-  const { scope, environments, connectedEnvironments, targets, target } = useSettingsScope();
+  const { scope, connectedEnvironments, targets, target } = useSettingsScope();
   const scopedSettings = useScopedSettings();
   const isProjectScope = scope.kind === "project" || scope.kind === "checkout";
   const settings = {
