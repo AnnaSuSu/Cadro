@@ -260,16 +260,16 @@ describe("DesktopLifecycle", () => {
         return yield* Deferred.await(relaunched);
       }).pipe(
         Effect.provide(layer),
-        Effect.provideService(HostProcess.ExecutablePath, "/opt/Cadro/t3code"),
+        Effect.provideService(HostProcess.ExecutablePath, "/opt/Cadro/cadro"),
         Effect.provideService(HostProcess.Arguments, [
-          "/opt/Cadro/t3code",
+          "/opt/Cadro/cadro",
           "--no-sandbox",
-          "T3CODE://pair?token=spent",
+          "CADRO://pair?token=spent",
           "cadro://new?prompt=hello",
         ]),
       );
 
-      assert.deepEqual(options, { execPath: "/opt/Cadro/t3code", args: ["--no-sandbox"] });
+      assert.deepEqual(options, { execPath: "/opt/Cadro/cadro", args: ["--no-sandbox"] });
     }),
   );
 

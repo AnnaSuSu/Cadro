@@ -60,7 +60,7 @@ it("gives the page's world a function that runs without the preload's scope", as
       pretendToBeVisual: true,
     });
     const install = NodeVM.runInContext(`(${executions[0].func})`, page.getInternalVMContext());
-    const context = await install(...executions[0].args).elementContext(
+    const context = await install(...(executions[0].args ?? [])).elementContext(
       page.window.document.getElementById("target"),
     );
     assert.equal(context.selector, "#target");

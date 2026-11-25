@@ -951,7 +951,7 @@ describe("BrowserSession", () => {
       assert.strictEqual(showMessageBox.mock.calls.length, 1);
       assert.isFalse(
         yield* (yield* FileSystem.FileSystem).exists(
-          `${browserSession!.storagePath}/t3code-certificate-approvals.json`,
+          `${browserSession!.storagePath}/cadro-certificate-approvals.json`,
         ),
       );
     }).pipe(Effect.scoped, Effect.provide(Layer.merge(layer, NodeServices.layer))),
@@ -1023,7 +1023,7 @@ describe("BrowserSession", () => {
       yield* browserSessions.getSession("scope-a");
       const browserSession = sessions.get(partition);
       // What a clear whose removal failed leaves behind: memory forgot, the file did not.
-      const file = `${browserSession!.storagePath}/t3code-certificate-approvals.json`;
+      const file = `${browserSession!.storagePath}/cadro-certificate-approvals.json`;
       yield* fileSystem.makeDirectory(browserSession!.storagePath!, { recursive: true });
       yield* fileSystem.writeFileString(
         file,
