@@ -376,7 +376,7 @@ describe("XAiAcpExtension", () => {
 
     const rendered = grokCall(
       "call-85597c6c-6fb8-4c9c-a6a8-12c4a74ebc96-1",
-      "t3-code__html_render",
+      "cadro__html_render",
       { path: "a.html" },
       {
         status: "completed",
