@@ -162,9 +162,9 @@ export function QueuedRunsControl({
           ...(previewUrl ? { previewUrl } : {}),
         };
       }),
-      fileNames: attachments
+      files: attachments
         .filter((entry) => !isImageAttachment(entry))
-        .map((entry) => entry.name),
+        .map(({ id, name }) => ({ id, name })),
       pending: false,
     })),
     ...optimisticQueued.map((message) => ({
@@ -178,9 +178,9 @@ export function QueuedRunsControl({
       editable: true,
       attachments: [] as ReadonlyArray<ContractChatAttachment>,
       thumbnails: (message.attachments ?? []).filter(isImageAttachment),
-      fileNames: (message.attachments ?? [])
+      files: (message.attachments ?? [])
         .filter((entry) => !isImageAttachment(entry))
-        .map((entry) => entry.name),
+        .map(({ id, name }) => ({ id, name })),
       pending: true,
     })),
   ];
@@ -321,7 +321,7 @@ export function QueuedRunsControl({
                 message={item.message}
                 previewText={previewText}
                 thumbnails={item.thumbnails}
-                fileNames={item.fileNames}
+                files={item.files}
                 isEditing={isEditing}
                 editDisabled={
                   item.runId === null ||
@@ -480,7 +480,7 @@ function QueuedMessage(props: {
   readonly environmentId: EnvironmentId;
   readonly message: QueuedRunMessage | undefined;
   readonly previewText: string;
-  readonly fileNames: readonly string[];
+  readonly files: readonly { readonly id: string; readonly name: string }[];
   readonly editDisabled: boolean;
   readonly editHint: string;
   readonly onEdit: () => void;
@@ -526,9 +526,9 @@ function QueuedMessage(props: {
           }
         : null;
   const thumbnails = props.thumbnails.slice(0, 2);
-  const firstFile = props.fileNames[0];
+  const firstFile = props.files[0]?.name;
   const hiddenCount =
-    props.thumbnails.length - thumbnails.length + Math.max(0, props.fileNames.length - 1);
+    props.thumbnails.length - thumbnails.length + Math.max(0, props.files.length - 1);
   const renderThumbnail = (thumbnail: ChatImageAttachment) => (
     <button
       key={thumbnail.id}
@@ -561,13 +561,17 @@ function QueuedMessage(props: {
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           {(!fold || expanded) && thumbnails.map(renderThumbnail)}
           {!fold && firstFile && (
-            <span
-              title={firstFile}
-              className="flex min-w-0 max-w-[40%] items-center gap-1 text-muted-foreground"
-            >
-              <FileIcon aria-hidden className="size-3.5 shrink-0" />
-              <span className="truncate">{firstFile}</span>
-            </span>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span className="flex min-w-0 max-w-[40%] items-center gap-1 text-muted-foreground" />
+                }
+              >
+                <FileIcon aria-hidden className="size-3.5 shrink-0" />
+                <span className="truncate">{firstFile}</span>
+              </TooltipTrigger>
+              <TooltipPopup>{firstFile}</TooltipPopup>
+            </Tooltip>
           )}
           {hiddenCount > 0 && !fold && (
             <span className="shrink-0 text-xs text-muted-foreground">+{hiddenCount}</span>
@@ -582,9 +586,12 @@ function QueuedMessage(props: {
               onToggle={() => setExpanded(!expanded)}
             />
           ) : (
-            <span className="min-w-0 truncate" title={props.previewText}>
-              {props.previewText}
-            </span>
+            <Tooltip>
+              <TooltipTrigger render={<span className="min-w-0 truncate" />}>
+                {props.previewText}
+              </TooltipTrigger>
+              <TooltipPopup>{props.previewText}</TooltipPopup>
+            </Tooltip>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
@@ -630,8 +637,8 @@ function QueuedMessage(props: {
           {props.previewText && (
             <p className="whitespace-pre-wrap wrap-anywhere">{props.previewText}</p>
           )}
-          {props.fileNames.map((name, index) => (
-            <div key={index} className="break-all text-xs text-muted-foreground">
+          {props.files.map(({ id, name }) => (
+            <div key={id} className="break-all text-xs text-muted-foreground">
               {name}
             </div>
           ))}
