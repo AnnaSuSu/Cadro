@@ -18,7 +18,7 @@
     "icons:check": "node scripts/export-brand-icons.ts --check",
     "i18n:check": "node scripts/i18n-check.ts",
     "licenses:sync": "node scripts/sync-third-party-license-notices.ts",
-    "build": "vp run --filter './apps/*' build",
+    "build": "vp run --filter @cadro/desktop build:app",
     "build:desktop": "vp run --filter @cadro/desktop build",
     "build:desktop:bundle": "vp run --filter @cadro/desktop build:bundle",
     "build:resource-monitor": "cargo build --locked --release --manifest-path native/resource-monitor/Cargo.toml",
