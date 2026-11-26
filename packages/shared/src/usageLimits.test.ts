@@ -135,9 +135,6 @@ describe("new thread model fallback", () => {
     ["cursor", ["autoPercentUsed"], "claude-opus-5-5", false, undefined, undefined],
     ["cursor", ["autoPercentUsed"], "composer-2.5", false, undefined, undefined],
     ["cursor", ["autoPercentUsed", "apiPercentUsed"], "composer-2.5", true, undefined, undefined],
-    ["antigravity", ["gemini-weekly"], "claude-opus-5-5", false, undefined, undefined],
-    ["antigravity", ["3p-weekly"], "claude-opus-5-5", true, undefined, undefined],
-    ["antigravity", ["gemini-weekly"], "antigravity-default", true, undefined, undefined],
     ["codex", ["individual"], "gpt-5.5", true, undefined, undefined],
     ["opencode", ["go_weekly"], "opencode/big-pickle", false, undefined, undefined],
     ["opencode", ["go_weekly"], "opencode-go/big-pickle", true, undefined, undefined],
@@ -405,45 +402,6 @@ describe("pools", () => {
       },
     });
     expect(collectLimitAccounts(input)).toHaveLength(1);
-  });
-
-  it("merges a local Antigravity login with its hub account by Google account fingerprint", () => {
-    const antigravity = ProviderDriverKind.make("antigravity");
-    const local = provider({
-      driver: antigravity,
-      instanceId: ProviderInstanceId.make("antigravity"),
-      auth: { status: "authenticated" },
-      usageLimits: {
-        checkedAt,
-        credentialFingerprint: "google-key",
-        windows: [{ ...window, id: "gemini-weekly", usedPercent: 20 }],
-      },
-    });
-    const hubAccount = {
-      id: "antigravity-g@example.com.json",
-      driver: antigravity,
-      usageLimits: {
-        checkedAt: "2026-09-03T11:30:00.000Z",
-        credentialFingerprint: "google-key",
-        windows: [{ ...window, id: "gemini-weekly", usedPercent: 30 }],
-      },
-    };
-    const accounts = collectLimitAccounts(
-      new Map([
-        [
-          EnvironmentId.make("env-a"),
-          {
-            ...laptop,
-            serverConfig: {
-              providers: [local],
-              usageLimitSources: [{ ...source, accounts: [hubAccount] }],
-            },
-          },
-        ],
-      ]),
-    );
-    expect(accounts).toHaveLength(1);
-    expect(accounts[0]?.limits.windows[0]?.usedPercent).toBe(30);
   });
 
   it("takes windows from a fresher hub read but credits and redeem from the native instance", () => {
@@ -1955,8 +1913,8 @@ describe("external usage settings", () => {
           ],
         ]),
       );
-    expect(notices(unsupported("Sign in with Google to see Antigravity limits."))).toEqual([
-      "codex: Sign in with Google to see Antigravity limits.",
+    expect(notices(unsupported("Usage limits are unavailable for this account."))).toEqual([
+      "codex: Usage limits are unavailable for this account.",
     ]);
     expect(notices(unsupported())).toEqual([]);
   });
@@ -2153,7 +2111,7 @@ describe("sidebar usage", () => {
     const codex = pool("codex", quota("session", 0, now + 1000));
     const claude = pool("claudeAgent", quota("session", 0, now + 2000));
     const cursor = pool("cursor", quota("session", 1));
-    const unknownReset = pool("antigravity", quota("weekly", 0));
+    const unknownReset = pool("grok", quota("weekly", 0));
     expect(summarize([codex, claude, cursor], cursor).focused?.pool).toBe(claude);
     expect(summarize([codex, claude, cursor], codex).focused?.pool).toBe(codex);
     expect(summarize([codex, claude, unknownReset]).focused?.pool).toBe(unknownReset);
@@ -2172,16 +2130,16 @@ describe("sidebar usage", () => {
     const codex = pool("codex", quota("session", 45));
     const claude = pool("claudeAgent", quota("session", 10));
     const cursor = pool("cursor", quota("session", 0));
-    const antigravity = pool("antigravity", quota("session", 25));
+    const muse = pool("muse", quota("session", 25));
     const grok = pool("grok", quota("session", 30));
-    const pools = [grok, cursor, claude, antigravity, codex];
+    const pools = [grok, cursor, claude, muse, codex];
     const summary = summarize(pools, grok);
     expect(summary.orderedPools.map((row) => row.pool)).toEqual([
       grok,
       codex,
       claude,
-      antigravity,
       cursor,
+      muse,
     ]);
     expect(summary.visibleRings.map((row) => row.pool)).toEqual([grok, claude, cursor]);
     expect(summary.overflowCount).toBe(2);

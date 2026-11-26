@@ -187,9 +187,10 @@ using a proxy through `ANTHROPIC_AUTH_TOKEN`.
 To see pooled accounts, open **Settings → Providers → Usage providers → Add hub**. Choose the
 environment that will connect to the hub and enter its URL and management key.
 
-The hub's Codex, Claude, xAI (shown as Grok) and Antigravity accounts appear under **Usage → Limits**;
-accounts for other providers are not read. Codex accounts show banked reset credits; select an
-account and choose **Use reset** to redeem one. No hub plugin is required.
+The hub's Codex, Claude and xAI (shown as Grok) accounts appear under **Usage → Limits**.
+Cadro skips accounts for every other provider, including Antigravity. Codex accounts show banked
+reset credits. To redeem one, select an account and choose **Use reset**. This works with
+CLIProxyAPI's built-in management API.
 
 This connection supplies usage information; configure
 the provider separately to send agent requests through the hub. A thread uses the hub's limits and
