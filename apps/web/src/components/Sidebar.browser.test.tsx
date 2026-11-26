@@ -611,6 +611,77 @@ describe("sidebar thread menu", () => {
     await vi.waitFor(() => expect(show).toHaveBeenCalledTimes(2));
     expect(show.mock.lastCall?.[2]).toBe("mouse");
   });
+
+  it("opens the thread context menu and inline rename for Recents rows", async () => {
+    using stack = new DisposableStack();
+    isolateDrafts(stack);
+    const previousSettings = getClientSettings();
+    stack.defer(() => __setClientSettingsForTests(previousSettings));
+    __setClientSettingsForTests(DEFAULT_CLIENT_SETTINGS);
+
+    const activeProject = project("active");
+    const scratch = { ...project("internal-scratch"), isScratch: true as const };
+    const projectThread = threadShell(activeProject.id, 0);
+    const standaloneThread = { ...threadShell(scratch.id, 1), title: "Standalone chat" };
+    const show = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce("rename");
+    vi.mocked(readLocalApi).mockReturnValue({ contextMenu: { show } } as unknown as LocalApi);
+    vi.mocked(useProjects).mockReturnValue([activeProject, scratch]);
+    vi.mocked(useQuietThreadShells).mockReturnValue([projectThread, standaloneThread]);
+    vi.mocked(useThreadRouteTarget).mockReturnValue(null);
+    vi.mocked(readEnvironmentScope).mockReturnValue(true);
+    vi.mocked(useEnvironmentScope).mockReturnValue(true);
+    vi.mocked(useHandleNewThread).mockReturnValue({
+      activeDraftThread: null,
+      activeThread: null,
+      defaultProjectRef: {
+        environmentId: activeProject.environmentId,
+        projectId: activeProject.id,
+      },
+      defaultProjectFallbackReady: true,
+      handleNewThread: vi.fn().mockResolvedValue(null),
+      routeDraftId: null,
+      routeThreadRef: null,
+    });
+
+    await using screen = await render(
+      <SidebarProvider>
+        <Sidebar routeReveal={{ observedKey: null, pendingKey: null }} />
+      </SidebarProvider>,
+    );
+
+    const standaloneRow = screen.getByRole("button", { name: "Standalone chat", exact: true });
+    await expect.element(standaloneRow).toBeVisible();
+    await userEvent.click(standaloneRow, { button: "right" });
+    await vi.waitFor(() => expect(show).toHaveBeenCalledTimes(1));
+    expect(show.mock.lastCall?.[2]).toBe("mouse");
+    expect(show.mock.lastCall?.[0]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "delete" })]),
+    );
+
+    standaloneRow.element().focus();
+    await userEvent.keyboard("{Shift>}{F10}{/Shift}");
+    await vi.waitFor(() => expect(show).toHaveBeenCalledTimes(2));
+    expect(show.mock.lastCall?.[2]).toBe("keyboard");
+
+    const recentProjectRow = screen.container.querySelector<HTMLElement>(
+      `[data-sidebar-row="recent:${projectThread.environmentId}:${projectThread.id}"]`,
+    );
+    expect(recentProjectRow).not.toBeNull();
+    await userEvent.click(recentProjectRow!, { button: "right" });
+    await vi.waitFor(() => expect(show).toHaveBeenCalledTimes(3));
+    const renameInput = screen.getByRole("textbox", { name: "Thread title" });
+    await expect.element(renameInput).toBeVisible();
+    expect(screen.container.querySelectorAll('input[aria-label="Thread title"]')).toHaveLength(1);
+    expect(
+      renameInput
+        .element()
+        .closest(`[data-sidebar-row="recent:${projectThread.environmentId}:${projectThread.id}"]`),
+    ).not.toBeNull();
+  });
 });
 
 describe("retired settlement", () => {

@@ -247,6 +247,7 @@ import {
 } from "./sidebar/routeReveal";
 import { stackedThreadToast, toastManager } from "./ui/toast";
 import { titleRegenerationToast } from "./threadTitleRegenerationToast";
+import { contextMenuSourceOf } from "../contextMenuSource";
 import { copyThreadReference } from "../lib/copyThreadReference";
 import { threadChipCopyTarget } from "@cadro/client-runtime/thread-reference";
 import { Button } from "./ui/button";
@@ -276,6 +277,7 @@ import {
   SidebarSearchResultRow,
   SidebarWorkingRing,
   SortableThreadRow,
+  ThreadRenameInput,
   type SidebarProviderEntry,
   type SidebarSweepAction,
 } from "./sidebar/SidebarThreadRow";
@@ -1034,18 +1036,23 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const connectedEnvironmentIds = useConnectedEnvironmentIds();
   const queuePendingFileDrop = useSidebarPendingFileDropStore((s) => s.queuePendingFileDrop);
   const clearPendingFileDrop = useSidebarPendingFileDropStore((s) => s.clearPendingFileDrop);
-  const [renamingThreadRef, setRenamingThreadRef] = useState<ScopedThreadRef | null>(null);
+  const [renamingThread, setRenamingThread] = useState<{
+    readonly threadRef: ScopedThreadRef;
+    readonly inRecents: boolean;
+  } | null>(null);
   const canOperateRenamingThread = useEnvironmentScope(
-    renamingThreadRef?.environmentId ?? null,
+    renamingThread?.threadRef.environmentId ?? null,
     AuthOrchestrationOperateScope,
   );
   // Losing operate access cancels the rename without committing the title, so
   // the editor does not return and take focus when access comes back.
-  if (renamingThreadRef !== null && !canOperateRenamingThread) setRenamingThreadRef(null);
+  if (renamingThread !== null && !canOperateRenamingThread) setRenamingThread(null);
   const renamingThreadKey =
-    renamingThreadRef !== null && canOperateRenamingThread
-      ? scopedThreadKey(renamingThreadRef)
+    renamingThread !== null && canOperateRenamingThread
+      ? scopedThreadKey(renamingThread.threadRef)
       : null;
+  const renamingInRecents =
+    renamingThread !== null && canOperateRenamingThread && renamingThread.inRecents;
   const [renamingTitle, setRenamingTitle] = useState("");
   const renamingOriginalTitleRef = useRef("");
   const threadListRef = useRef<HTMLUListElement | null>(null);
@@ -1557,19 +1564,21 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   };
 
   // The ref write stops the compiler memoizing this, and every row receives it.
-  const startThreadRename = useStableCallback((threadRef: ScopedThreadRef, title: string) => {
-    if (!readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope)) return;
-    setRenamingThreadRef(threadRef);
-    setRenamingTitle(title);
-    renamingOriginalTitleRef.current = title;
-  });
-  const cancelThreadRename = () => setRenamingThreadRef(null);
+  const startThreadRename = useStableCallback(
+    (threadRef: ScopedThreadRef, title: string, inRecents: boolean = false) => {
+      if (!readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope)) return;
+      setRenamingThread({ threadRef, inRecents });
+      setRenamingTitle(title);
+      renamingOriginalTitleRef.current = title;
+    },
+  );
+  const cancelThreadRename = () => setRenamingThread(null);
   const commitThreadRename = (threadRef: ScopedThreadRef, title: string) => {
     const originalTitle = renamingOriginalTitleRef.current;
     void (async () => {
       if (!readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope)) return;
       const trimmed = title.trim();
-      setRenamingThreadRef(null);
+      setRenamingThread(null);
       if (trimmed.length === 0) {
         toastManager.add({ type: "warning", title: gt("Thread title cannot be empty") });
         return;
@@ -2510,16 +2519,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       threadRef: ScopedThreadRef,
       position: { x: number; y: number },
       source: ContextMenuSource,
-      fromSearch = false,
+      origin: "row" | "search" | "recent" = "row",
     ) => {
       void (async () => {
         const api = readLocalApi();
         if (!api) return;
         const threadKey = scopedThreadKey(threadRef);
         const selectionState = useThreadSelectionStore.getState();
-        // Search results are not selectable rows, so they always act on their own thread.
+        // Search results and Recents rows are not selectable, so they always act on their own thread.
         if (
-          !fromSearch &&
+          origin === "row" &&
           selectionState.hasSelection() &&
           selectionState.selectedThreadKeys.has(threadKey)
         ) {
@@ -2579,7 +2588,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                 canShareWithGuestAtom(threadRef.environmentId),
               ),
               canTurnIntoProject: canTurnThreadIntoProject(threadRef),
-              canRename: !fromSearch,
+              canRename: origin !== "search",
               supports: {
                 snooze: configLoaded,
                 pinning: configLoaded,
@@ -2678,7 +2687,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
             return;
           }
           case "rename":
-            startThreadRename(threadRef, thread.title);
+            startThreadRename(threadRef, thread.title, origin === "recent");
             return;
           case "share-guest":
             openGuestShareDialog(threadRef);
@@ -2786,7 +2795,11 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   );
   const handleSearchResultContextMenu = useStableCallback(
     (threadRef: ScopedThreadRef, position: { x: number; y: number }, source: ContextMenuSource) =>
-      handleThreadContextMenu(threadRef, position, source, true),
+      handleThreadContextMenu(threadRef, position, source, "search"),
+  );
+  const handleRecentThreadContextMenu = useStableCallback(
+    (threadRef: ScopedThreadRef, position: { x: number; y: number }, source: ContextMenuSource) =>
+      handleThreadContextMenu(threadRef, position, source, "recent"),
   );
 
   // oxlint-disable-next-line cadro/no-unreasoned-state-sync -- subscribes to window keydown for thread navigation shortcuts using the current thread list
@@ -3338,13 +3351,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           : projectFolders !== null || !isCard
                             ? "slim"
                             : "card";
+                        const isRowRenaming = renamingThreadKey === threadKey && !renamingInRecents;
                         return (
                           <SortableThreadRow
                             key={threadKey}
                             sortableId={threadKey}
                             contextDrag={isContextDrag}
                             sortableDisabled={
-                              renamingThreadKey === threadKey ||
+                              isRowRenaming ||
                               !draggableThreadKeys.has(threadKey) ||
                               optimisticDrop !== null
                             }
@@ -3418,8 +3432,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             onRenameTitleChange={setRenamingTitle}
                             onCommitRename={commitThreadRename}
                             onCancelRename={cancelThreadRename}
-                            isRenaming={renamingThreadKey === threadKey}
-                            renamingTitle={renamingThreadKey === threadKey ? renamingTitle : ""}
+                            isRenaming={isRowRenaming}
+                            renamingTitle={isRowRenaming ? renamingTitle : ""}
                             onContextMenu={handleThreadContextMenu}
                             onActionSweepStart={startActionSweep}
                             onSnooze={attemptSnooze}
@@ -3502,38 +3516,73 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             );
                           }
                           for (const thread of recentThreads) {
+                            const threadRef = scopeThreadRef(thread.environmentId, thread.id);
                             const key = threadShellKey(thread);
                             const current = routeRowThreadKey === key && !folderThreadKeys.has(key);
+                            const isRenamingRecent = renamingThreadKey === key && renamingInRecents;
                             const status = resolveSidebarThreadStatus(thread);
+                            const recentRowClassName = cn(
+                              "flex h-[30px] w-full min-w-0 cursor-pointer items-center gap-2 rounded-(--sidebar-row-radius) ps-2 pe-3 text-start text-sm font-normal text-sidebar-foreground outline-none motion-safe:transition-colors motion-safe:duration-100 hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                              current && "bg-sidebar-row-active text-foreground",
+                            );
                             items.push(
                               <li key={`recent:${key}`} className="list-none">
-                                <button
-                                  type="button"
-                                  aria-current={current ? "page" : undefined}
-                                  className={cn(
-                                    "flex h-[30px] w-full min-w-0 cursor-pointer items-center gap-2 rounded-(--sidebar-row-radius) ps-2 pe-3 text-start text-sm font-normal text-sidebar-foreground outline-none motion-safe:transition-colors motion-safe:duration-100 hover:bg-sidebar-row-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                                    current && "bg-sidebar-row-active text-foreground",
-                                  )}
-                                  onClick={() =>
-                                    void navigateToThread(
-                                      scopeThreadRef(thread.environmentId, thread.id),
-                                    )
-                                  }
-                                >
-                                  <span className="min-w-0 flex-1 overflow-hidden whitespace-nowrap mask-r-from-(--sidebar-title-fade-start)">
-                                    {thread.title}
-                                  </span>
-                                  {status === "working" || status === "preparing" ? (
-                                    <>
-                                      <SidebarWorkingRing />
-                                      <span className="sr-only">
-                                        {status === "preparing"
-                                          ? gt("Setting up")
-                                          : gt("Working", { $context: "thread status" })}
-                                      </span>
-                                    </>
-                                  ) : null}
-                                </button>
+                                {isRenamingRecent ? (
+                                  <div
+                                    data-sidebar-row={`recent:${key}`}
+                                    aria-current={current ? "page" : undefined}
+                                    className={recentRowClassName}
+                                  >
+                                    <ThreadRenameInput
+                                      title={renamingTitle}
+                                      onTitleChange={setRenamingTitle}
+                                      onCommit={() => commitThreadRename(threadRef, renamingTitle)}
+                                      onCancel={cancelThreadRename}
+                                    />
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    data-sidebar-row={`recent:${key}`}
+                                    aria-current={current ? "page" : undefined}
+                                    className={recentRowClassName}
+                                    onClick={() => void navigateToThread(threadRef)}
+                                    onKeyDown={(event) => {
+                                      if (
+                                        event.key === "F2" &&
+                                        readEnvironmentScope(
+                                          thread.environmentId,
+                                          AuthOrchestrationOperateScope,
+                                        )
+                                      ) {
+                                        event.preventDefault();
+                                        startThreadRename(threadRef, thread.title, true);
+                                      }
+                                    }}
+                                    onContextMenu={(event) => {
+                                      event.preventDefault();
+                                      handleRecentThreadContextMenu(
+                                        threadRef,
+                                        { x: event.clientX, y: event.clientY },
+                                        contextMenuSourceOf(event),
+                                      );
+                                    }}
+                                  >
+                                    <span className="min-w-0 flex-1 overflow-hidden whitespace-nowrap mask-r-from-(--sidebar-title-fade-start)">
+                                      {thread.title}
+                                    </span>
+                                    {status === "working" || status === "preparing" ? (
+                                      <>
+                                        <SidebarWorkingRing />
+                                        <span className="sr-only">
+                                          {status === "preparing"
+                                            ? gt("Setting up")
+                                            : gt("Working", { $context: "thread status" })}
+                                        </span>
+                                      </>
+                                    ) : null}
+                                  </button>
+                                )}
                               </li>,
                             );
                           }
