@@ -36,7 +36,7 @@
 
 <p align="center">
   <img
-    src="./.github/readme/hero.webp"
+    src="./.github/readme/hero-zh.webp"
     width="100%"
     alt="Cadro 桌面端在单个会话中并行派发 Claude 与 Codex 子智能体的演示界面"
   />
