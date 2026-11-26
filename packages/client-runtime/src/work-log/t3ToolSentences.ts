@@ -245,50 +245,50 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, CadroToolSentence> = new Map<
     },
   ],
   [
-    "Create\nCreating\nCreated\nT3 threads",
+    "Create\nCreating\nCreated\nCadro threads",
     {
       detail: msg(
-        "{status, select, inProgress {Creating T3 threads} completed {Created T3 threads} failed {Failed to create T3 threads} declined {Declined to create T3 threads} stopped {Stopped creating T3 threads} other {Creating T3 threads}}",
+        "{status, select, inProgress {Creating Cadro threads} completed {Created Cadro threads} failed {Failed to create Cadro threads} declined {Declined to create Cadro threads} stopped {Stopped creating Cadro threads} other {Creating Cadro threads}}",
       ),
     },
   ],
   [
-    "Start\nStarting\nStarted\na T3 thread",
+    "Start\nStarting\nStarted\na Cadro thread",
     {
       detail: msg(
-        "{status, select, inProgress {Starting a T3 thread} completed {Started a T3 thread} failed {Failed to start a T3 thread} declined {Declined to start a T3 thread} stopped {Stopped starting a T3 thread} other {Starting a T3 thread}}",
+        "{status, select, inProgress {Starting a Cadro thread} completed {Started a Cadro thread} failed {Failed to start a Cadro thread} declined {Declined to start a Cadro thread} stopped {Stopped starting a Cadro thread} other {Starting a Cadro thread}}",
       ),
     },
   ],
   [
-    "List\nListing\nListed\nT3 threads",
+    "List\nListing\nListed\nCadro threads",
     {
       detail: msg(
-        "{status, select, inProgress {Listing T3 threads} completed {Listed T3 threads} failed {Failed to list T3 threads} declined {Declined to list T3 threads} stopped {Stopped listing T3 threads} other {Listing T3 threads}}",
+        "{status, select, inProgress {Listing Cadro threads} completed {Listed Cadro threads} failed {Failed to list Cadro threads} declined {Declined to list Cadro threads} stopped {Stopped listing Cadro threads} other {Listing Cadro threads}}",
       ),
     },
   ],
   [
-    "Read\nReading\nRead\na T3 thread",
+    "Read\nReading\nRead\na Cadro thread",
     {
       detail: msg(
-        "{status, select, inProgress {Reading a T3 thread} completed {Read a T3 thread} failed {Failed to read a T3 thread} declined {Declined to read a T3 thread} stopped {Stopped reading a T3 thread} other {Reading a T3 thread}}",
+        "{status, select, inProgress {Reading a Cadro thread} completed {Read a Cadro thread} failed {Failed to read a Cadro thread} declined {Declined to read a Cadro thread} stopped {Stopped reading a Cadro thread} other {Reading a Cadro thread}}",
       ),
     },
   ],
   [
-    "Send\nSending\nSent\nto a T3 thread",
+    "Send\nSending\nSent\nto a Cadro thread",
     {
       detail: msg(
-        "{status, select, inProgress {Sending to a T3 thread} completed {Sent to a T3 thread} failed {Failed to send to a T3 thread} declined {Declined to send to a T3 thread} stopped {Stopped sending to a T3 thread} other {Sending to a T3 thread}}",
+        "{status, select, inProgress {Sending to a Cadro thread} completed {Sent to a Cadro thread} failed {Failed to send to a Cadro thread} declined {Declined to send to a Cadro thread} stopped {Stopped sending to a Cadro thread} other {Sending to a Cadro thread}}",
       ),
     },
   ],
   [
-    "Wait\nWaiting\nWaited\nfor a T3 thread",
+    "Wait\nWaiting\nWaited\nfor a Cadro thread",
     {
       detail: msg(
-        "{status, select, inProgress {Waiting for a T3 thread} completed {Waited for a T3 thread} failed {Failed to wait for a T3 thread} declined {Declined to wait for a T3 thread} stopped {Stopped waiting for a T3 thread} other {Waiting for a T3 thread}}",
+        "{status, select, inProgress {Waiting for a Cadro thread} completed {Waited for a Cadro thread} failed {Failed to wait for a Cadro thread} declined {Declined to wait for a Cadro thread} stopped {Stopped waiting for a Cadro thread} other {Waiting for a Cadro thread}}",
       ),
     },
   ],
@@ -309,10 +309,10 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, CadroToolSentence> = new Map<
     },
   ],
   [
-    "Interrupt\nInterrupting\nRequested an interrupt of\na T3 thread",
+    "Interrupt\nInterrupting\nRequested an interrupt of\na Cadro thread",
     {
       detail: msg(
-        "{status, select, inProgress {Interrupting a T3 thread} completed {Requested an interrupt of a T3 thread} failed {Failed to interrupt a T3 thread} declined {Declined to interrupt a T3 thread} stopped {Stopped interrupting a T3 thread} other {Interrupting a T3 thread}}",
+        "{status, select, inProgress {Interrupting a Cadro thread} completed {Requested an interrupt of a Cadro thread} failed {Failed to interrupt a Cadro thread} declined {Declined to interrupt a Cadro thread} stopped {Stopped interrupting a Cadro thread} other {Interrupting a Cadro thread}}",
       ),
     },
   ],
@@ -685,10 +685,10 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, CadroToolSentence> = new Map<
     },
   ],
   [
-    "Update\nUpdating\nUpdated\nT3 thread metadata",
+    "Update\nUpdating\nUpdated\nCadro thread metadata",
     {
       detail: msg(
-        "{status, select, inProgress {Updating T3 thread metadata} completed {Updated T3 thread metadata} failed {Failed to update T3 thread metadata} declined {Declined to update T3 thread metadata} stopped {Stopped updating T3 thread metadata} other {Updating T3 thread metadata}}",
+        "{status, select, inProgress {Updating Cadro thread metadata} completed {Updated Cadro thread metadata} failed {Failed to update Cadro thread metadata} declined {Declined to update Cadro thread metadata} stopped {Stopped updating Cadro thread metadata} other {Updating Cadro thread metadata}}",
       ),
     },
   ],

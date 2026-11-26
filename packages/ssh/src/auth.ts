@@ -77,21 +77,21 @@ function joinSshAskpassPath(
 }
 
 const ASKPASS_POSIX_SCRIPT = `#!/bin/sh
-# Invoked by ssh via SSH_ASKPASS when T3 Code re-runs ssh with a cached password
+# Invoked by ssh via SSH_ASKPASS when Cadro re-runs ssh with a cached password
 # from the renderer's in-app prompt. We never expose a native dialog here - if
 # CADRO_SSH_AUTH_SECRET is missing, that's a caller bug and we fail loudly.
 if [ "\${CADRO_SSH_AUTH_SECRET+x}" = "x" ]; then
   printf "%s\\n" "$CADRO_SSH_AUTH_SECRET"
   exit 0
 fi
-printf 'T3 Code ssh-askpass invoked without CADRO_SSH_AUTH_SECRET.\\n' >&2
+printf 'Cadro ssh-askpass invoked without CADRO_SSH_AUTH_SECRET.\\n' >&2
 exit 1
 `;
 
 // Windows has no helper form every ssh can start. Win32-OpenSSH starts `"<node>" "<this file>"`
 // directly; Cygwin/MSYS ssh (Git for Windows) execs ssh-askpass.sh through its own sh. Either
 // way ssh appends the prompt as a plain trailing argument, which the helpers never read.
-const ASKPASS_WINDOWS_NODE_SCRIPT = `// Invoked by ssh via SSH_ASKPASS when T3 Code re-runs ssh with a cached password
+const ASKPASS_WINDOWS_NODE_SCRIPT = `// Invoked by ssh via SSH_ASKPASS when Cadro re-runs ssh with a cached password
 // from the renderer's in-app prompt. Answers from CADRO_SSH_AUTH_SECRET only and
 // never reads its arguments; if the secret is missing, that's a caller bug and
 // we fail loudly.
@@ -99,7 +99,7 @@ if ("CADRO_SSH_AUTH_SECRET" in process.env) {
   process.stdout.write((process.env.CADRO_SSH_AUTH_SECRET || "") + "\\n");
   process.exit(0);
 }
-process.stderr.write("T3 Code ssh-askpass invoked without CADRO_SSH_AUTH_SECRET.\\n");
+process.stderr.write("Cadro ssh-askpass invoked without CADRO_SSH_AUTH_SECRET.\\n");
 process.exit(1);
 `;
 
