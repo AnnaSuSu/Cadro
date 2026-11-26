@@ -250,12 +250,19 @@ it("shows empty projects and keeps extra project threads one click away", async 
   );
 });
 
+// Drafts survive page reloads and may belong to a previous browser test.
+function isolateDrafts(stack: DisposableStack) {
+  const previous = useComposerDraftStore.getState();
+  stack.defer(() => useComposerDraftStore.setState(previous, true));
+  useComposerDraftStore.setState(useComposerDraftStore.getInitialState(), true);
+}
+
 // regression: #38623 unsent drafts are listed above threads but mod+1..9 skipped them
 describe("sidebar numbered jumps", () => {
   it("numbers the unsent draft at the top before the threads below it", async () => {
-    const initial = useComposerDraftStore.getState();
     using stack = new DisposableStack();
-    stack.defer(() => useComposerDraftStore.setState(initial, true));
+    isolateDrafts(stack);
+    const initial = useComposerDraftStore.getState();
     const previousSettings = getClientSettings();
     stack.defer(() => __setClientSettingsForTests(previousSettings));
     __setClientSettingsForTests(DEFAULT_CLIENT_SETTINGS);
@@ -325,6 +332,7 @@ describe("sidebar render isolation", () => {
   // regression: #33100 Cmd+J re-rendered every sidebar row, which took hundreds of ms with many threads
   it("does not re-render thread rows when a quick Mod shortcut opens and focuses the terminal", async () => {
     using stack = new DisposableStack();
+    isolateDrafts(stack);
     const activeProject = project("active");
     const threads = Array.from({ length: 5 }, (_, index) => threadShell(activeProject.id, index));
     const routeThreadRef: ScopedThreadRef = {
