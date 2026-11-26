@@ -1338,7 +1338,7 @@ describe("KiroAdapterV2 MCP tools", () => {
             const completed = items.at(-1);
             assert.deepEqual(
               items.map((item) => item.toolName),
-              items.map(() => "t3-code.html_render"),
+              items.map(() => "cadro.html_render"),
             );
             assert.equal(completed?.status, "completed");
             assert.deepEqual(completed?.input, args);

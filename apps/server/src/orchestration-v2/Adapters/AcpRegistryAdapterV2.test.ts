@@ -1613,10 +1613,13 @@ describe("AcpRegistryAdapterV2", () => {
         new: stdio("Bearer opened-token"),
         load: stdio("Bearer rotated-token"),
       });
-      assert.deepEqual(yield* sessionMcpServers({ agentId: "gemini" }, { CADRO_ACP_MCP_HTTP: "1" }), {
-        new: stdio("Bearer opened-token"),
-        load: stdio("Bearer rotated-token"),
-      });
+      assert.deepEqual(
+        yield* sessionMcpServers({ agentId: "gemini" }, { CADRO_ACP_MCP_HTTP: "1" }),
+        {
+          new: stdio("Bearer opened-token"),
+          load: stdio("Bearer rotated-token"),
+        },
+      );
       // Command Code cannot start the stdio bridge on Windows: it spawns MCP commands through
       // cmd.exe, which splits the unquoted T3 executable path at the space.
       const commandCode = {
@@ -1738,7 +1741,11 @@ describe("AcpRegistryAdapterV2", () => {
               ordinal === 1
                 ? t3AcpPromptWithInstructions({
                     prompt: "test prompt",
-                    state: { interactionMode: "default", hasCadroMcp: false, hasDeviceTools: false },
+                    state: {
+                      interactionMode: "default",
+                      hasCadroMcp: false,
+                      hasDeviceTools: false,
+                    },
                   })
                 : "test prompt",
           },
@@ -3445,7 +3452,7 @@ describe("AcpRegistryAdapterV2", () => {
               event.turnItem.nativeItemRef?.nativeId ===
                 "agent-1:session:grandchild:tool:terminal-tool" &&
               event.turnItem.threadId === row.subagent.childThreadId &&
-              event.turnItem.toolName === "t3-code.orchestrator_capabilities",
+              event.turnItem.toolName === "cadro.orchestrator_capabilities",
           ),
           "embedded agent-terminal commands preserve nested MCP identity",
         );

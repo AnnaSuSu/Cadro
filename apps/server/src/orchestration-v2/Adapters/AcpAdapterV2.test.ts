@@ -2761,7 +2761,10 @@ describe("AcpAdapterV2", () => {
     {
       // Without a `mode` category, T3 derives no mode state and only the config option switches.
       modeIds: "Copilot URL collaboration_mode",
-      environment: { CADRO_ACP_COPILOT_MODES: "1", CADRO_ACP_MODE_OPTION_CATEGORY: "collaboration_mode" },
+      environment: {
+        CADRO_ACP_COPILOT_MODES: "1",
+        CADRO_ACP_MODE_OPTION_CATEGORY: "collaboration_mode",
+      },
       planModeId: "https://agentclientprotocol.com/protocol/session-modes#plan",
       buildModeId: "https://agentclientprotocol.com/protocol/session-modes#agent",
     },
@@ -4653,7 +4656,7 @@ describe("AcpAdapterV2", () => {
           (item) =>
             item.threadId === task?.childThreadId &&
             item.type === "dynamic_tool" &&
-            item.toolName === "t3-code.task_status",
+            item.toolName === "cadro.task_status",
         ),
       );
       const childMcp = items.find(
@@ -5393,8 +5396,8 @@ describe("AcpAdapterV2", () => {
         results: undefined,
       });
       assert.deepEqual(webItem("grok-web-search", "completed"), {
-        title: "Web search: t3 code",
-        patterns: ["t3 code"],
+        title: "Web search: cadro code",
+        patterns: ["cadro code"],
         results: [{ url: "https://example.com" }, { url: "https://github.com/pingdotgg/t3code" }],
       });
       assert.deepEqual(webItem("antigravity-web-search", "completed"), {
@@ -6321,7 +6324,9 @@ describe("AcpAdapterV2", () => {
       Effect.gen(function* () {
         const harness = yield* makePromptInactivityHarness({
           environment: (runtimeOrdinal) =>
-            runtimeOrdinal === 1 ? { CADRO_ACP_EMIT_TRACKED_TOOL_CALL_KIND_THEN_HANG: "execute" } : {},
+            runtimeOrdinal === 1
+              ? { CADRO_ACP_EMIT_TRACKED_TOOL_CALL_KIND_THEN_HANG: "execute" }
+              : {},
         });
         yield* harness.startTurn(1);
         yield* harness.runtime.events.pipe(
@@ -7683,8 +7688,9 @@ describe("AcpAdapterV2", () => {
           ? replacementMcpServer.env
           : undefined;
       assert.equal(
-        replacementMcpEnvironment?.find((variable) => variable.name === "CADRO_ACP_MCP_AUTHORIZATION")
-          ?.value,
+        replacementMcpEnvironment?.find(
+          (variable) => variable.name === "CADRO_ACP_MCP_AUTHORIZATION",
+        )?.value,
         "Bearer rollback-target-token",
       );
       const snapshotAfterRollback = yield* runtime.readThreadSnapshot({
