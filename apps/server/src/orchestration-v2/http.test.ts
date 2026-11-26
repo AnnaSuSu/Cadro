@@ -45,6 +45,7 @@ import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as ThreadManagementService from "./ThreadManagementService.ts";
 import * as ProviderAdapterRegistry from "./ProviderAdapterRegistry.ts";
 import * as ProviderReplayHarness from "./testkit/ProviderReplayHarness.ts";
+import { restoreLegacySettlement } from "./testkit/legacySettlement.ts";
 
 class TranscriptTestApi extends HttpApi.make("environment").add(
   EnvironmentHttpApi.groups.orchestration,
@@ -431,25 +432,27 @@ it.effect("streams the full snapshot with the endpoint's errors", () =>
 
 it.effect("leaves older settled threads out of the HTTP shell only when asked", () =>
   Effect.gen(function* () {
-    const { eventSink, handler } = yield* serveOrchestrationHttp(() => true);
-    yield* eventSink.write({
-      events: Array.from({ length: 26 }, (_, index) => {
-        const id = ThreadId.make(`settled-${index}`);
-        return {
-          id: EventId.make(`create-${id}`),
-          type: "thread.created" as const,
-          threadId: id,
-          occurredAt: now,
-          payload: {
-            ...thread,
-            id,
-            lineage: { ...thread.lineage, rootThreadId: id },
-            settledOverride: "settled" as const,
-            settledAt: DateTime.makeUnsafe(Date.UTC(2026, 8, 1 + index)),
-          },
-        };
-      }),
+    const { eventSink, handler, services } = yield* serveOrchestrationHttp(() => true);
+    const events = Array.from({ length: 26 }, (_, index) => {
+      const id = ThreadId.make(`settled-${index}`);
+      return {
+        id: EventId.make(`create-${id}`),
+        type: "thread.created" as const,
+        threadId: id,
+        occurredAt: now,
+        payload: {
+          ...thread,
+          id,
+          lineage: { ...thread.lineage, rootThreadId: id },
+          settledOverride: "settled" as const,
+          settledAt: DateTime.makeUnsafe(Date.UTC(2026, 8, 1 + index)),
+        },
+      };
     });
+    yield* eventSink.write({ events });
+    yield* Effect.forEach(events, restoreLegacySettlement, { discard: true }).pipe(
+      Effect.provide(services),
+    );
     const shell = (query: string) =>
       Effect.promise(async () => {
         const response = await handler(

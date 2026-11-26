@@ -537,10 +537,7 @@ it.layer(layerTest)("LegacyV1ThreadImporter", (it) => {
         shellProjection.thread.snoozedUntil,
         DateTime.makeUnsafe("2026-02-01T00:00:00.000Z"),
       );
-      assert.deepEqual(
-        shellProjection.thread.unsettledAt,
-        DateTime.makeUnsafe("2026-01-03T12:00:00.000Z"),
-      );
+      assert.isNull(shellProjection.thread.unsettledAt);
       assert.equal(shellProjection.thread.linkedPullRequest?.number, 9000);
       assert.deepStrictEqual(
         (shellProjection.thread.pullRequests ?? []).map((link) => link.number),
@@ -607,8 +604,8 @@ it.layer(layerTest)("LegacyV1ThreadImporter", (it) => {
       assert.equal(projection.thread.runtimeMode, "approval-required");
       assert.equal(projection.thread.interactionMode, "plan");
       assert.deepEqual(projection.thread.archivedAt, renamedAt);
-      assert.equal(projection.thread.settledOverride, "settled");
-      assert.deepEqual(projection.thread.settledAt, renamedAt);
+      assert.isNull(projection.thread.settledOverride);
+      assert.isNull(projection.thread.settledAt);
       assert.deepStrictEqual(
         projection.messages.map((message) => message.id),
         ["message:legacy:1", "message:legacy:2", "message:legacy:3", "message:legacy:4"],
@@ -683,10 +680,7 @@ it.layer(layerTest)("LegacyV1ThreadImporter", (it) => {
         repaired.thread.snoozedUntil,
         DateTime.makeUnsafe("2026-02-01T00:00:00.000Z"),
       );
-      assert.deepEqual(
-        repaired.thread.unsettledAt,
-        DateTime.makeUnsafe("2026-01-03T12:00:00.000Z"),
-      );
+      assert.isNull(repaired.thread.unsettledAt);
       assert.equal(repaired.thread.linkedPullRequest?.number, 9000);
       assert.deepStrictEqual(
         (repaired.thread.pullRequests ?? []).map((link) => link.number),

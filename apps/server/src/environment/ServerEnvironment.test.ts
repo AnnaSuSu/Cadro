@@ -110,12 +110,12 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("ServerEnvironmen
           mode === "web" ? undefined : "desktop-managed",
         );
         expect(descriptor.capabilities).toMatchObject({
-          settledWorktreeCleanup: true,
           storageCleanupRun: true,
           projectWorktreeCleanup: true,
           worktreesDirectory: true,
-          threadAutoSettlementScope: true,
         });
+        expect(descriptor.capabilities).not.toHaveProperty("settledWorktreeCleanup", true);
+        expect(descriptor.capabilities).not.toHaveProperty("threadAutoSettlementScope", true);
       }
     }),
   );

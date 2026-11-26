@@ -365,7 +365,10 @@ layer("066_RepairClientSettlementTimestamps", (it) => {
 
       const maintenance = yield* ProjectionReplay.ProjectionReplay;
       assert.isTrue((yield* maintenance.rebuild).valid);
-      assert.deepEqual(yield* imported, expectedImported);
+      assert.deepEqual(
+        yield* imported,
+        expectedImported.map((row) => ({ ...row, settled_at: null, settled_override: null })),
+      );
     }),
   );
 });
