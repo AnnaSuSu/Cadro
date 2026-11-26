@@ -12278,6 +12278,8 @@
     },
     ". Elles s’exécutent sur la machine de cet environnement avec vos autorisations, hors de tout bac à sable d’agent. La question vous sera reposée chaque fois que leur texte changera."
   ],
+  "a6f7d026054d7293": "Workbench",
+  "3213c38c70fe39f7": "Workspace navigation",
   "876e7a8c229f3d07": "Désépingler",
   "045741aa62df51f8": "Tous"
 }

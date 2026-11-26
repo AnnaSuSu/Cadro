@@ -93,10 +93,12 @@ export interface CommandPaletteUiState {
   readonly open: boolean;
   readonly mode: SearchOverlayMode;
   readonly commandTab?: CommandPaletteSearchTab;
+  readonly tabQuery?: string;
   /** What the current palette session opened to; read once when the palette view mounts. */
   readonly openIntent: CommandPaletteOpenIntent | null;
-  /** Bumped by every intent so an open palette starts over from the new one. */
+  /** Bumped when a view must start over with a new initial state. */
   readonly session: number;
+  readonly returnToCommandOnEscape?: true;
   readonly parentSearch?: CommandPaletteReturnContext;
   readonly restoredSearch?: CommandPaletteReturnContext;
 }
@@ -104,10 +106,11 @@ export interface CommandPaletteUiState {
 export type CommandPaletteUiAction =
   | { readonly _tag: "SetOpen"; readonly open: boolean }
   | { readonly _tag: "ToggleMode"; readonly mode: SearchOverlayMode }
-  | { readonly _tag: "SelectTab"; readonly tab: CommandPaletteOverlayTab }
+  | { readonly _tag: "SelectTab"; readonly tab: CommandPaletteOverlayTab; readonly query: string }
   | {
       readonly _tag: "OpenSearch";
       readonly query: string;
+      readonly tab?: CommandPaletteSearchTab;
       readonly linkedThreads?: CommandPaletteLinkedThreads;
     }
   | { readonly _tag: "OpenAddProject" }
@@ -119,6 +122,14 @@ export type CommandPaletteUiAction =
       readonly context: CommandPaletteReturnContext;
     }
   | { readonly _tag: "BackToCommand" };
+
+export function canReturnToCommand(state: CommandPaletteUiState): boolean {
+  return (
+    state.open &&
+    state.mode !== "command" &&
+    (state.parentSearch !== undefined || state.returnToCommandOnEscape === true)
+  );
+}
 
 export function reduceCommandPaletteUiState(
   state: CommandPaletteUiState,
@@ -134,47 +145,70 @@ export function reduceCommandPaletteUiState(
   switch (action._tag) {
     case "SetOpen":
       return action.open
-        ? { open: true, mode: "command", openIntent: state.openIntent, session }
+        ? {
+            open: true,
+            mode: "command",
+            openIntent: state.openIntent,
+            session: state.open ? session : session + 1,
+          }
         : { open: false, mode: state.mode, openIntent: null, session };
     case "ToggleMode":
       return state.open && state.mode === action.mode
         ? { open: false, mode: state.mode, openIntent: null, session }
-        : { open: true, mode: action.mode, openIntent: null, session };
-    case "SelectTab":
-      if (action.tab === "files" || action.tab === "content") {
-        return { open: true, mode: action.tab, openIntent: null, session };
-      }
+        : {
+            open: true,
+            mode: action.mode,
+            openIntent: null,
+            session: state.open ? session : session + 1,
+            ...(action.mode === "command" ? {} : { returnToCommandOnEscape: true }),
+          };
+    case "SelectTab": {
+      const { tab, query } = action;
+      const mode = tab === "files" || tab === "content" ? tab : "command";
+      const tabQuery =
+        mode === "command" && tab !== "actions"
+          ? query.replace(/^(?:>\s*)+/, "")
+          : mode !== "command" && state.mode === "command"
+            ? query.replace(/^>\s*/, "")
+            : query;
       return {
         open: true,
-        mode: "command",
-        ...(action.tab === "all" ? {} : { commandTab: action.tab }),
+        mode,
+        ...(tab !== "all" && tab !== "files" && tab !== "content" ? { commandTab: tab } : {}),
+        tabQuery,
         openIntent: null,
-        session,
+        session: mode === state.mode && tabQuery !== query ? session + 1 : session,
       };
+    }
     case "OpenChildSearch":
       return {
         open: true,
         mode: action.mode,
+        ...(state.commandTab ? { commandTab: state.commandTab } : {}),
         openIntent: null,
         session,
         parentSearch: action.context,
       };
     case "BackToCommand":
-      return state.open && state.mode !== "command"
+      return canReturnToCommand(state)
         ? {
             open: true,
             mode: "command",
+            ...(state.commandTab ? { commandTab: state.commandTab } : {}),
             openIntent: null,
             session,
             ...(state.parentSearch ? { restoredSearch: state.parentSearch } : {}),
           }
         : state;
     case "OpenSearch":
-      return openWithIntent({
-        kind: "search",
-        query: action.query,
-        ...(action.linkedThreads ? { linkedThreads: action.linkedThreads } : {}),
-      });
+      return {
+        ...openWithIntent({
+          kind: "search",
+          query: action.query,
+          ...(action.linkedThreads ? { linkedThreads: action.linkedThreads } : {}),
+        }),
+        ...(action.tab ? { commandTab: action.tab } : {}),
+      };
     case "OpenAddProject":
       return openWithIntent({ kind: "add-project" });
     case "OpenNewThreadIn":

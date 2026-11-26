@@ -13,16 +13,13 @@ vi.mock(import("../state/server"), async (original) => {
   ]);
   return { ...actual, primaryServerKeybindingsAtom: Atom.make(keybindings) };
 });
-// The thread list needs live environments; keep the footer so footer controls render in the shell.
-vi.mock(import("./Sidebar"), async () => {
-  const { SidebarChromeFooter } = await import("./sidebar/SidebarChrome");
-  return { default: (() => <SidebarChromeFooter />) as never };
-});
+// The thread list needs live environments; the shortcut lives in the shell around it.
+vi.mock(import("./Sidebar"), () => ({ default: (() => null) as never }));
 
 import { AppSidebarLayout } from "./AppSidebarLayout";
 
 describe("sidebar toggle shortcut", () => {
-  it("opens the usage summary from the sidebar footer and links to the usage page", async () => {
+  it("opens the usage summary from the rail and links to the usage page", async () => {
     await page.viewport(1280, 800);
     await using screen = await render(
       <AppSidebarLayout>
@@ -37,7 +34,6 @@ describe("sidebar toggle shortcut", () => {
       .toHaveAttribute("href", "/usage");
     await userEvent.keyboard("{Escape}");
     await expect.element(usage).toHaveFocus();
-    await expect.element(screen.getByRole("button", { name: "Settings" })).toBeVisible();
   });
 
   it("leaves the key to a focused terminal when its rule excludes terminalFocus", async () => {
@@ -53,9 +49,10 @@ describe("sidebar toggle shortcut", () => {
       </AppSidebarLayout>,
     );
     const wrapper = screen.container.querySelector('[data-slot="sidebar-wrapper"]')!;
+    const rail = screen.container.querySelector('[aria-label="Workspace navigation"]')!;
     const sidebar = wrapper.querySelector("[data-app-sidebar]")!;
-    expect(screen.container.querySelector('[aria-label="Workspace navigation"]')).toBeNull();
-    expect(sidebar.getBoundingClientRect().left).toBe(0);
+    expect(rail.getBoundingClientRect().width).toBe(48);
+    expect(sidebar.getBoundingClientRect().left).toBe(48);
 
     await userEvent.click(screen.getByRole("textbox", { name: "Terminal input" }));
     await userEvent.keyboard("{Control>}b{/Control}");

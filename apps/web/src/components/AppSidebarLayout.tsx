@@ -42,6 +42,7 @@ import {
 import { BackgroundThreadAnnouncer } from "./BackgroundThreadAnnouncer";
 import { HistorySwipeNavigation } from "./HistorySwipeNavigation";
 import ThreadSidebar from "./Sidebar";
+import { CadroActivityRail } from "./sidebar/CadroActivityRail";
 import { workspaceSubpage } from "./sidebar/mainAppLocation";
 import type { SidebarRouteReveal } from "./sidebar/routeReveal";
 import {
@@ -65,6 +66,7 @@ import { appAtomRegistry } from "../rpc/atomRegistry";
 import { registerCommands, registerMenuAction } from "../shortcuts/dispatcher";
 import { resolveThreadRouteRef } from "../threadRoutes";
 
+const ACTIVITY_RAIL_WIDTH = 48;
 const MACOS_TRAFFIC_LIGHTS_LEFT_INSET = "var(--desktop-window-controls-inset, 90px)";
 
 function subscribeToViewportWidth(onChange: () => void): () => void {
@@ -384,6 +386,7 @@ function SidebarControl({ showSidebar }: { readonly showSidebar: boolean }) {
       className={cn(
         "pointer-events-none fixed left-[var(--workspace-controls-left)] top-[var(--workspace-controls-top)] z-50 ml-px flex h-[var(--workspace-topbar-height)] items-center",
         mobileSidebarSheetMounted && "hidden",
+        "md:left-0 md:ml-0 md:top-[var(--cadro-rail-control-top,0.5rem)] md:h-9 md:w-12 md:justify-center",
         !showSidebar && "hidden",
       )}
       data-sidebar-control=""
@@ -434,7 +437,10 @@ export function AppSidebarLayout({
   // A clamped drag may not change width, so viewport changes need a separate subscription.
   const viewportWidth = useSyncExternalStore(subscribeToViewportWidth, readViewportWidth);
   const sidebarMinimumWidth = resolveThreadSidebarMinimumWidth(0);
-  const sidebarMaximumWidth = resolveThreadSidebarMaximumWidth(viewportWidth, sidebarMinimumWidth);
+  const sidebarMaximumWidth = resolveThreadSidebarMaximumWidth(
+    viewportWidth - ACTIVITY_RAIL_WIDTH,
+    sidebarMinimumWidth,
+  );
   const resetSidebarWidth = () => {
     try {
       removeLocalStorageItem(THREAD_SIDEBAR_WIDTH_STORAGE_KEY);
@@ -452,10 +458,12 @@ export function AppSidebarLayout({
     clearTrafficLights
       ? {
           "--workspace-controls-left": MACOS_TRAFFIC_LIGHTS_LEFT_INSET,
+          "--cadro-rail-control-top": "var(--workspace-topbar-height)",
         }
       : {}
   ) as CSSProperties;
   const sidebarProviderStyle = {
+    "--sidebar-left-offset": `${ACTIVITY_RAIL_WIDTH}px`,
     "--sidebar-width": `${clampThreadSidebarWidth(sidebarWidth, sidebarMinimumWidth, sidebarMaximumWidth)}px`,
     "--panel-animation-duration": `${panelAnimationDurationMs}ms`,
     ...windowControlsInsetStyle,
@@ -470,30 +478,34 @@ export function AppSidebarLayout({
         style={sidebarProviderStyle}
       >
         {showSidebar ? (
-          <Activity mode={settingsOpen ? "hidden" : "visible"}>
-            <Sidebar
-              side="left"
-              collapsible="offcanvas"
-              data-app-sidebar=""
-              {...sidebarArea}
-              role="navigation"
-              aria-label={gt("Threads")}
-              resizable={{
-                collapseOnResize: true,
-                maxWidth: sidebarMaximumWidth,
-                minWidth: sidebarMinimumWidth,
-                shouldAcceptWidth: ({ currentWidth, nextWidth, wrapper }) =>
-                  nextWidth <= currentWidth ||
-                  wrapper.clientWidth - nextWidth >= THREAD_MAIN_CONTENT_MIN_WIDTH,
-                storageKey: THREAD_SIDEBAR_WIDTH_STORAGE_KEY,
-                onResize: setSidebarWidth,
-              }}
-              style={windowControlsInsetStyle}
-            >
-              <ThreadSidebar routeReveal={sidebarRouteReveal} />
-              <SidebarRail onDoubleClick={resetSidebarWidth} />
-            </Sidebar>
-          </Activity>
+          <>
+            <CadroActivityRail clearTrafficLights={clearTrafficLights} className="z-20" />
+            <Activity mode={settingsOpen ? "hidden" : "visible"}>
+              <Sidebar
+                side="left"
+                collapsible="offcanvas"
+                data-app-sidebar=""
+                {...sidebarArea}
+                role="navigation"
+                aria-label={gt("Threads")}
+                resizable={{
+                  collapseOnResize: true,
+                  maxWidth: sidebarMaximumWidth,
+                  minWidth: sidebarMinimumWidth,
+                  shouldAcceptWidth: ({ currentWidth, nextWidth, wrapper }) =>
+                    nextWidth <= currentWidth ||
+                    wrapper.clientWidth - ACTIVITY_RAIL_WIDTH - nextWidth >=
+                      THREAD_MAIN_CONTENT_MIN_WIDTH,
+                  storageKey: THREAD_SIDEBAR_WIDTH_STORAGE_KEY,
+                  onResize: setSidebarWidth,
+                }}
+                style={windowControlsInsetStyle}
+              >
+                <ThreadSidebar routeReveal={sidebarRouteReveal} />
+                <SidebarRail onDoubleClick={resetSidebarWidth} />
+              </Sidebar>
+            </Activity>
+          </>
         ) : null}
         {children}
         <BackgroundThreadAnnouncer />

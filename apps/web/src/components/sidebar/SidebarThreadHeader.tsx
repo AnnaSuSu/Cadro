@@ -6,7 +6,6 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type RefObject,
-  useState,
 } from "react";
 
 import { cn } from "~/lib/utils";
@@ -63,7 +62,6 @@ export function SidebarThreadHeader({
   onClearSearch,
 }: SidebarThreadHeaderProps) {
   const gt = useGT();
-  const [searchOpen, setSearchOpen] = useState(false);
   const resultsVisible = isSearching && searchResultCount > 0;
   // Shrinking results can remove the active option; never leave aria-activedescendant pointing at it.
   const activeResultExists = resultsVisible && activeSearchResultIndex < searchResultCount;
@@ -72,17 +70,7 @@ export function SidebarThreadHeader({
     : gt("New thread");
 
   const searchField = (
-    <div
-      className={cn(
-        "flex h-8 min-w-0 flex-1 items-center gap-2 rounded-full border border-sidebar-border bg-sidebar-control-surface px-2 py-1.5 text-sm text-sidebar-muted-foreground focus-within:ring-1 focus-within:ring-inset focus-within:ring-ring/70",
-        treeMode && !searchOpen && !isSearching && "sr-only",
-      )}
-      onFocus={() => setSearchOpen(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget) && !searchQuery)
-          setSearchOpen(false);
-      }}
-    >
+    <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-full border border-sidebar-border bg-sidebar-control-surface px-2 py-1.5 text-sm text-sidebar-muted-foreground focus-within:ring-1 focus-within:ring-inset focus-within:ring-ring/70">
       <SearchIcon className="size-4 shrink-0 text-(--sidebar-icon-color)" />
       <SidebarInput
         ref={searchInputRef}
@@ -127,7 +115,7 @@ export function SidebarThreadHeader({
           {hasProjects ? projectScope : null}
           <SidebarHeaderIconButton
             label={gt("Search threads")}
-            onClick={() => openCommandPalette()}
+            onClick={() => openCommandPalette({ tab: "threads" })}
           >
             <SearchIcon aria-hidden className="size-4 stroke-(length:--sidebar-icon-stroke)" />
           </SidebarHeaderIconButton>

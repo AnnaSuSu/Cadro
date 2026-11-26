@@ -45,10 +45,13 @@ test(
     await expect(screen.getByRole("combobox", "Search projects")).toBeVisible();
     await browser.keyboard.press("Escape");
     await search.tap();
-    const field = threads.getByRole("combobox", "Search threads");
+    const palette = screen.getByRole("dialog", "Command palette");
+    await expect(palette.getByRole("tab", "Threads")).toHaveAttribute("aria-selected", "true");
+    const field = palette.getByRole("combobox");
     await field.fill("商店");
-    await expect(threads.getByRole("option")).toContainText("检查商店自动提审能力");
+    await expect(palette.getByRole("option", /检查商店自动提审能力/)).toBeVisible();
     await field.press("Escape");
+    await expect(palette).toHaveCount(0);
 
     await threads.getByRole("button", "Workspace menu", { exact: true }).tap();
     await screen.getByRole("menuitem", /^Settings/).tap();

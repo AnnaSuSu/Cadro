@@ -21,6 +21,7 @@ import { useProjectFilePickerQuery } from "./projectFilesQueryState";
 
 interface ProjectFilePickerProps {
   readonly setOpen: (open: boolean) => void;
+  readonly initialQuery: string;
 }
 
 function HighlightedFuzzyText(props: {
@@ -61,18 +62,18 @@ function getEmptyStateMessage(
   return isSearching ? resolve(msg("No matching files.")) : resolve(msg("No files found."));
 }
 
-function EmptyProjectFilePicker() {
+function EmptyProjectFilePicker({ query }: { readonly query: string }) {
   const gt = useGT();
   return (
     <CommandPaletteContent
       aria-label={gt("File picker")}
       escapeLabel={gt("Back", { $context: "button, leaves the file picker" })}
       footerActionLabel={gt("Open file")}
-      footerLeading={<CommandPaletteSearchTabs activeTab="files" />}
+      footerLeading={<CommandPaletteSearchTabs activeTab="files" query={query} />}
       inputProps={{ disabled: true, placeholder: gt("Search files…") }}
       mode="none"
       testId="project-file-picker"
-      value=""
+      value={query}
     >
       <div className="py-10 text-center text-sm text-muted-foreground">
         <T>Open a project to search its files.</T>
@@ -85,7 +86,7 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
   const { target } = props;
   const gt = useGT();
   const messages = useMessages();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(props.initialQuery);
   const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
   const result = useProjectFilePickerQuery(
     target.environmentId,
@@ -131,7 +132,7 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
       autoHighlight="always"
       escapeLabel={gt("Back", { $context: "button, leaves the file picker" })}
       footerActionLabel={gt("Open file")}
-      footerLeading={<CommandPaletteSearchTabs activeTab="files" />}
+      footerLeading={<CommandPaletteSearchTabs activeTab="files" query={query} />}
       inputProps={{ placeholder: gt("Search files…") }}
       mode="none"
       onItemHighlighted={(value) => {
@@ -167,8 +168,8 @@ export function ProjectFilePicker(props: ProjectFilePickerProps) {
   const target = useActiveProjectTarget();
 
   if (!target) {
-    return <EmptyProjectFilePicker />;
+    return <EmptyProjectFilePicker query={props.initialQuery} />;
   }
 
-  return <OpenProjectFilePicker setOpen={props.setOpen} target={target} />;
+  return <OpenProjectFilePicker {...props} target={target} />;
 }

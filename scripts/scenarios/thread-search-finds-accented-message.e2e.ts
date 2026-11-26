@@ -16,10 +16,14 @@ test(
     await composer.press("Enter");
     await expect(screen.getByText("second fixture turn complete", { exact: false })).toBeVisible();
 
-    await screen.getByRole("combobox", "Search threads").fill("fermée ec");
-    await expect(screen.getByRole("listbox", "Thread search results")).toContainText(
-      "École fermée",
-    );
+    await screen.getByRole("button", "Search threads", { exact: true }).tap();
+    const palette = screen.getByRole("dialog", "Command palette");
+    await expect(palette.getByRole("tab", "Threads")).toHaveAttribute("aria-selected", "true");
+    const field = palette.getByRole("combobox");
+    await field.fill("fermée ec");
+    await expect(palette.getByRole("option", /Weekly notes/)).toContainText("École fermée");
     await app.screenshot("search");
+    await field.press("Escape");
+    await expect(palette).toHaveCount(0);
   },
 );

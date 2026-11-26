@@ -20,6 +20,7 @@ import { HighlightedSearchLine } from "./HighlightedSearchLine";
 
 interface ProjectContentSearchDialogProps {
   readonly onOpenChange: (open: boolean) => void;
+  readonly initialQuery?: string;
 }
 
 /** Syntax-highlighting all 500 result rows at once stalls the UI. */
@@ -79,19 +80,19 @@ function SearchOptionButton(props: {
   );
 }
 
-function EmptyContentSearchDialog() {
+function EmptyContentSearchDialog({ query }: { readonly query: string }) {
   const gt = useGT();
   return (
     <CommandPaletteContent
       aria-label={gt("Search project contents")}
       escapeLabel={gt("Back")}
       footerActionLabel={gt("Open file")}
-      footerLeading={<CommandPaletteSearchTabs activeTab="content" />}
+      footerLeading={<CommandPaletteSearchTabs activeTab="content" query={query} />}
       inputProps={{ disabled: true, placeholder: gt("Search project contents…") }}
       mode="none"
       panelSize="fill"
       testId="project-content-search"
-      value=""
+      value={query}
     >
       <p className="m-auto px-6 text-center text-muted-foreground text-sm">
         <T>Open a project to search its files.</T>
@@ -104,16 +105,17 @@ const scrollSelectedRowIntoView = (row: HTMLElement | null) => {
   row?.scrollIntoView({ block: "nearest" });
 };
 
-function OpenContentSearchDialog(props: {
-  readonly onOpenChange: (open: boolean) => void;
-  readonly target: ActiveProjectTarget;
-}) {
+function OpenContentSearchDialog(
+  props: ProjectContentSearchDialogProps & {
+    readonly target: ActiveProjectTarget;
+  },
+) {
   const { target } = props;
   const gt = useGT();
   const messages = useMessages();
   const { resolvedTheme } = useTheme();
   const renderedAppearance = useRenderedAppearance();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(props.initialQuery ?? "");
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [useRegex, setUseRegex] = useState(false);
@@ -174,7 +176,7 @@ function OpenContentSearchDialog(props: {
       aria-label={gt("Search file contents in {project}", { project: target.projectName })}
       escapeLabel={gt("Back")}
       footerActionLabel={gt("Open file")}
-      footerLeading={<CommandPaletteSearchTabs activeTab="content" />}
+      footerLeading={<CommandPaletteSearchTabs activeTab="content" query={query} />}
       inputAccessory={
         <div className="absolute inset-e-2.5 top-1/2 flex shrink-0 -translate-y-1/2 items-center gap-0.5 rounded-lg border bg-muted/30 p-0.5">
           <SearchOptionButton
@@ -340,10 +342,10 @@ export function ProjectContentSearchDialog(props: ProjectContentSearchDialogProp
   return target ? (
     <OpenContentSearchDialog
       key={`${target.environmentId}:${target.cwd}`}
-      onOpenChange={props.onOpenChange}
+      {...props}
       target={target}
     />
   ) : (
-    <EmptyContentSearchDialog />
+    <EmptyContentSearchDialog query={props.initialQuery ?? ""} />
   );
 }

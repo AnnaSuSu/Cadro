@@ -1,6 +1,7 @@
 import type { EnvironmentId, PullRequestLinkedThreadsResult } from "@cadro/contracts";
 
 import { dispatchCommandPalette, isCommandPaletteMounted } from "./commandPaletteStore";
+import type { CommandPaletteSearchTab } from "./components/CommandPalette.logic";
 
 export interface CommandPaletteLinkedThreads {
   readonly environmentId: EnvironmentId;
@@ -10,6 +11,7 @@ export interface CommandPaletteLinkedThreads {
 export interface CommandPaletteOpenDetail {
   readonly open?: "add-project" | "new-thread-in";
   readonly query?: string;
+  readonly tab?: CommandPaletteSearchTab;
   readonly linkedThreads?: CommandPaletteLinkedThreads;
 }
 
@@ -21,10 +23,11 @@ export function openCommandPalette(detail: CommandPaletteOpenDetail = {}): void 
     dispatchCommandPalette({ _tag: "OpenNewThreadIn" });
   } else if (detail.open === "add-project") {
     dispatchCommandPalette({ _tag: "OpenAddProject" });
-  } else if (detail.query !== undefined) {
+  } else if (detail.query !== undefined || detail.tab !== undefined) {
     dispatchCommandPalette({
       _tag: "OpenSearch",
-      query: detail.query,
+      query: detail.query ?? "",
+      ...(detail.tab ? { tab: detail.tab } : {}),
       ...(detail.linkedThreads ? { linkedThreads: detail.linkedThreads } : {}),
     });
   } else {

@@ -8,6 +8,8 @@ import { openCommandPalette } from "../commandPaletteBus";
 import { dispatchCommandPalette, useCommandPaletteStore } from "../commandPaletteStore";
 import { LAST_USED_PROJECT_STORAGE_KEY } from "../hooks/useHandleNewThread";
 import { removeLocalStorageItem } from "../hooks/useLocalStorage";
+import { installCommandPaletteCommands } from "../shortcuts/commandPaletteCommands";
+import appCss from "../index.css?inline";
 import { makeThreadFixture } from "../test-fixtures";
 import type { Project, Thread } from "../types";
 import { CommandPalette } from "./CommandPalette";
@@ -18,6 +20,29 @@ const entities = vi.hoisted(() => ({
   activeThread: undefined as Thread | undefined,
   delegatedUnderParent: new Set<string>() as ReadonlySet<string>,
   handleNewThread: vi.fn(async () => undefined),
+}));
+const { searchThreads, emptyContentSearch } = vi.hoisted(() => ({
+  searchThreads: vi.fn((_environmentIds: unknown, query: string) => ({
+    matches: [],
+    query,
+    isPending: query !== "",
+    failed: false,
+  })),
+  emptyContentSearch: {
+    canReadFiles: true,
+    isCheckingAccess: false,
+    hasQuery: false,
+    isPending: false,
+    error: null,
+    invalidRegex: false,
+    truncated: false,
+    matches: [],
+  },
+}));
+vi.mock("../state/queries", async (original) => ({
+  ...(await original<typeof import("../state/queries")>()),
+  useThreadSearch: searchThreads,
+  useProjectContentSearch: () => emptyContentSearch,
 }));
 vi.mock("../state/server", async (original) => {
   const actual = await original<typeof import("../state/server")>();
@@ -61,6 +86,7 @@ function setup(state: Partial<typeof entities> = {}) {
   entities.activeThread = state.activeThread;
   entities.delegatedUnderParent = state.delegatedUnderParent ?? new Set();
   entities.handleNewThread.mockClear();
+  searchThreads.mockClear();
 }
 
 function makeProject(title: string): Project {
@@ -383,5 +409,116 @@ describe("CommandPalette open intents", () => {
 
     await userEvent.keyboard("{Escape}");
     await expect.element(palette).not.toBeInTheDocument();
+  });
+});
+
+describe("CommandPalette search tabs", () => {
+  const tab = (name: string) => page.getByRole("tab", { name, exact: true });
+  const input = page.getByRole("combobox");
+  const palette = () => (
+    <CommandPalette>
+      <style>{appCss}</style>
+    </CommandPalette>
+  );
+
+  it("opens on Threads and keeps the latest query and input focus across mouse tab switches", async () => {
+    const project = makeProject("acme");
+    setup({
+      projects: [project],
+      activeThread: makeThreadFixture({
+        environmentId: project.environmentId,
+        projectId: project.id,
+      }),
+    });
+    await using _screen = await render(palette());
+
+    openCommandPalette({ tab: "threads" });
+    await expect.element(tab("Threads")).toHaveAttribute("aria-selected", "true");
+    await expect.element(input).toHaveFocus();
+    await input.fill("sidebar");
+    await tab("Files").click();
+    await expect.element(input).toHaveValue("sidebar");
+    await expect.element(input).toHaveFocus();
+    await tab("Text").click();
+    await expect.element(input).toHaveValue("sidebar");
+    await expect.element(input).toHaveFocus();
+    await input.fill("sidebar chrome");
+    await tab("Threads").click();
+    await expect.element(input).toHaveValue("sidebar chrome");
+    await expect.element(input).toHaveFocus();
+  });
+
+  it("moves roving focus across command, file, and text tabs with arrows, Home, and End", async () => {
+    setup();
+    await using _screen = await render(palette());
+
+    openCommandPalette();
+    await expect.element(input).toHaveFocus();
+    await act(() => (tab("All").element() as HTMLElement).focus());
+
+    for (const [key, name] of [
+      ["ArrowLeft", "Text"],
+      ["ArrowLeft", "Files"],
+      ["ArrowLeft", "Projects"],
+      ["ArrowRight", "Files"],
+      ["Home", "All"],
+      ["End", "Text"],
+      ["ArrowRight", "All"],
+    ] as const) {
+      await userEvent.keyboard(`{${key}}`);
+      await expect.element(tab(name)).toHaveFocus();
+      await expect.element(tab(name)).toHaveAttribute("aria-selected", "true");
+      await expect.element(tab(name)).toHaveAttribute("tabindex", "0");
+      expect(page.getByRole("tablist").element().querySelectorAll('[tabindex="0"]')).toHaveLength(
+        1,
+      );
+    }
+  });
+
+  it.each(["Files", "Text"])("closes the overlay on Escape from the %s tab", async (name) => {
+    setup();
+    await using screen = await render(palette());
+    using commands = new DisposableStack();
+    commands.defer(installCommandPaletteCommands(screen.router!));
+
+    openCommandPalette({ query: "sidebar" });
+    await tab(name).click();
+    await expect.element(tab(name)).toHaveAttribute("aria-selected", "true");
+    await act(() => (tab(name).element() as HTMLElement).focus());
+    await userEvent.keyboard("{Escape}");
+    await expect.element(page.getByTestId("command-palette")).not.toBeInTheDocument();
+    openCommandPalette();
+    await expect.element(input).toHaveValue("");
+  });
+
+  it("skips message search in Actions and Projects and highlights Actions for the > prefix", async () => {
+    setup();
+    await using _screen = await render(palette());
+
+    openCommandPalette({ tab: "threads", query: "sidebar" });
+    await expect.element(page.getByText("Searching messages…", { exact: true })).toBeVisible();
+    expect(searchThreads.mock.lastCall?.[1]).toBe("sidebar");
+
+    for (const name of ["Actions", "Projects"]) {
+      searchThreads.mockClear();
+      await tab(name).click();
+      await input.fill(name);
+      await expect
+        .element(page.getByText("Searching messages…", { exact: true }))
+        .not.toBeInTheDocument();
+      expect(searchThreads.mock.calls.map(([, query]) => query)).not.toContainEqual(
+        expect.stringMatching(/\S/),
+      );
+    }
+
+    await input.fill("> sidebar");
+    await expect.element(tab("Actions")).toHaveAttribute("aria-selected", "true");
+    await tab("Files").click();
+    await expect.element(input).toHaveValue("sidebar");
+    await tab("Threads").click();
+    await input.fill("> sidebar");
+    await tab("Threads").click();
+    await expect.element(tab("Threads")).toHaveAttribute("aria-selected", "true");
+    await expect.element(input).toHaveValue("sidebar");
   });
 });

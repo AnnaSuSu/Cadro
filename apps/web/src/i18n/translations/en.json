@@ -12287,6 +12287,8 @@
     },
     ". They run on this environment's machine with your permissions, outside any agent sandbox. You are asked again whenever their text changes."
   ],
+  "a6f7d026054d7293": "Workbench",
+  "3213c38c70fe39f7": "Workspace navigation",
   "876e7a8c229f3d07": "Unpin",
   "045741aa62df51f8": "All"
 }

@@ -12278,6 +12278,8 @@
     },
     ". Eles são executados na máquina deste ambiente com as suas permissões, fora de qualquer sandbox de agente. Você será perguntado de novo sempre que o texto deles mudar."
   ],
+  "a6f7d026054d7293": "Workbench",
+  "3213c38c70fe39f7": "Workspace navigation",
   "876e7a8c229f3d07": "Desafixar",
   "045741aa62df51f8": "Todos"
 }

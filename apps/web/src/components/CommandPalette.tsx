@@ -207,11 +207,13 @@ import {
   buildRootGroups,
   buildLinkedThreadActionItems,
   buildCommandPaletteRows,
+  canReturnToCommand,
   enumerateCommandPaletteItems,
   newThreadNoProjectIndex,
   findHighlightedCommandPaletteItem,
   type CommandPaletteActionItem,
   type CommandPaletteOpenIntent,
+  type CommandPaletteOverlayTab,
   type CommandPaletteProject,
   type CommandPaletteReturnContext,
   type CommandPaletteSearchTab,
@@ -240,6 +242,7 @@ import { resolveEnvironmentOptionLabel } from "./BranchToolbar.logic";
 import {
   CommandPaletteContent,
   CommandPaletteSearchTabs,
+  CommandPaletteTabFocusContext,
   type PendingInputSelection,
 } from "./CommandPaletteContent";
 import {
@@ -353,7 +356,7 @@ export function CommandPalette({ children }: { children: ReactNode }) {
             eventDetails.cancel();
             return;
           }
-          if (!open && eventDetails.reason === "escape-key" && state.mode !== "command") {
+          if (!open && eventDetails.reason === "escape-key" && canReturnToCommand(state)) {
             eventDetails.cancel();
             dispatchCommandPalette({ _tag: "BackToCommand" });
             return;
@@ -372,6 +375,7 @@ export function CommandPalette({ children }: { children: ReactNode }) {
           setOpen={setOpen}
           openChildSearch={openChildSearch}
           initialContext={state.restoredSearch}
+          initialQuery={state.tabQuery ?? ""}
         />
       </CommandDialog>
     </ComposerHandleContext>
@@ -389,9 +393,11 @@ function CommandPaletteDialog(props: {
     context: CommandPaletteReturnContext,
   ) => void;
   readonly initialContext: CommandPaletteReturnContext | undefined;
+  readonly initialQuery: string;
 }) {
   const gt = useGT();
   const composerHandleRef = useComposerHandleContext();
+  const pendingTabFocus = useRef<CommandPaletteOverlayTab | null>(null);
 
   return (
     <CommandDialogPopup
@@ -421,20 +427,31 @@ function CommandPaletteDialog(props: {
         props.setOpen(false);
       }}
     >
-      {props.mode === "files" ? (
-        <ProjectFilePicker setOpen={props.setOpen} />
-      ) : props.mode === "content" ? (
-        <ProjectContentSearchDialog onOpenChange={props.setOpen} />
-      ) : (
-        <OpenCommandPaletteDialog
-          key={props.session}
-          commandTab={props.commandTab}
-          openIntent={props.openIntent}
-          setOpen={props.setOpen}
-          openChildSearch={props.openChildSearch}
-          initialContext={props.initialContext}
-        />
-      )}
+      <CommandPaletteTabFocusContext value={pendingTabFocus}>
+        {props.mode === "files" ? (
+          <ProjectFilePicker
+            key={props.session}
+            setOpen={props.setOpen}
+            initialQuery={props.initialQuery}
+          />
+        ) : props.mode === "content" ? (
+          <ProjectContentSearchDialog
+            key={props.session}
+            onOpenChange={props.setOpen}
+            initialQuery={props.initialQuery}
+          />
+        ) : (
+          <OpenCommandPaletteDialog
+            key={props.session}
+            commandTab={props.commandTab}
+            openIntent={props.openIntent}
+            setOpen={props.setOpen}
+            openChildSearch={props.openChildSearch}
+            initialContext={props.initialContext}
+            initialQuery={props.initialQuery}
+          />
+        )}
+      </CommandPaletteTabFocusContext>
     </CommandDialogPopup>
   );
 }
@@ -448,6 +465,7 @@ function OpenCommandPaletteDialog(props: {
     context: CommandPaletteReturnContext,
   ) => void;
   readonly initialContext: CommandPaletteReturnContext | undefined;
+  readonly initialQuery: string;
 }) {
   const gt = useGT();
   const messages = useMessages();
@@ -459,7 +477,7 @@ function OpenCommandPaletteDialog(props: {
   const [initialSearch] = useState(
     () =>
       props.initialContext ?? {
-        query: props.openIntent?.kind === "search" ? props.openIntent.query : "",
+        query: props.openIntent?.kind === "search" ? props.openIntent.query : props.initialQuery,
         linkedThreadSearch: props.openIntent?.kind === "search" ? props.openIntent : null,
       },
   );
@@ -478,7 +496,7 @@ function OpenCommandPaletteDialog(props: {
   const { query, views: viewStack } = searchState;
   const setQuery = (query: string) => dispatchSearch({ type: "query", query });
   const deferredQuery = useDeferredValue(query);
-  const isActionsOnly = deferredQuery.startsWith(">");
+  const isActionsOnly = query.startsWith(">");
   const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
   const resultListRef = useRef<LegendListRef | null>(null);
   // A pushed view drops the typed highlight until the user moves it again.
@@ -575,7 +593,13 @@ function OpenCommandPaletteDialog(props: {
     query: deferredQuery,
   });
   const currentView = viewStack.at(-1)?.view ?? null;
-  const threadSearchQuery = currentView === null && !isActionsOnly ? deferredQuery : "";
+  const threadSearchQuery =
+    currentView === null &&
+    !isActionsOnly &&
+    !deferredQuery.startsWith(">") &&
+    (props.commandTab === "all" || props.commandTab === "threads")
+      ? deferredQuery
+      : "";
   const [browseGeneration, setBrowseGeneration] = useState(0);
   const [browseNavigation] = useState(createBrowseNavigationCoordinator);
   const [addProjectEnvironmentId, setAddProjectEnvironmentId] = useState<EnvironmentId | null>(
@@ -3122,6 +3146,7 @@ function OpenCommandPaletteDialog(props: {
     !isRemoteProjectCloneFlow &&
     newProjectFlow === null &&
     !isLinkedThreadSearch;
+  const effectiveCommandTab: CommandPaletteSearchTab = isActionsOnly ? "actions" : props.commandTab;
 
   return (
     <CommandPaletteContent
@@ -3130,7 +3155,9 @@ function OpenCommandPaletteDialog(props: {
       autoHighlight={autoHighlightsFirstRow ? "always" : false}
       footerActionLabel={footerActionLabel}
       footerLeading={
-        showSearchTabs ? <CommandPaletteSearchTabs activeTab={props.commandTab} /> : undefined
+        showSearchTabs ? (
+          <CommandPaletteSearchTabs activeTab={effectiveCommandTab} query={query} />
+        ) : undefined
       }
       footerTrailing={footerTrailing}
       inputAccessory={inputAccessory}

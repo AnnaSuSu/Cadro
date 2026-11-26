@@ -6,7 +6,7 @@ import {
   isCommandPaletteMounted,
   useCommandPaletteStore,
 } from "../commandPaletteStore";
-import { overlayModeForCommand } from "../components/CommandPalette.logic";
+import { canReturnToCommand, overlayModeForCommand } from "../components/CommandPalette.logic";
 import { APPEARANCE_OPTIONS, notifyThemeSaveFailure } from "../components/CommandPaletteThemeItems";
 import { toggleThemeEditorForTheme } from "../components/settings/themeEditorStore";
 import { toastManager } from "../components/ui/toast";
@@ -44,8 +44,7 @@ export function installCommandPaletteCommands(
     return target?.kind === "server" ? target.threadRef : null;
   };
 
-  // A child search (files, contents) goes back to the palette on Escape before
-  // its own widgets or the dialog can treat the key as a close.
+  // Handle Escape before file and content search widgets consume it.
   const disposeEscape = registerCommands(
     {},
     {
@@ -53,11 +52,13 @@ export function installCommandPaletteCommands(
       when: isCommandPaletteMounted,
       onKeyDown: (event) => {
         if (event.isComposing || event.keyCode === 229 || event.key !== "Escape") return false;
-        const { open, mode } = useCommandPaletteStore.getState();
-        if (!open || mode === "command") return false;
+        const state = useCommandPaletteStore.getState();
+        if (!state.open || state.mode === "command") return false;
         consume(event);
         if (event.repeat) return;
-        dispatchCommandPalette({ _tag: "BackToCommand" });
+        dispatchCommandPalette(
+          canReturnToCommand(state) ? { _tag: "BackToCommand" } : { _tag: "SetOpen", open: false },
+        );
       },
     },
   );

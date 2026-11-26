@@ -1,12 +1,31 @@
 import { T, useGT } from "gt-react";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import { type ComponentProps, type ReactNode, type RefObject } from "react";
+import {
+  createContext,
+  type ComponentProps,
+  type ReactNode,
+  type RefObject,
+  useContext,
+} from "react";
 
 import { cn } from "~/lib/utils";
 import { dispatchCommandPalette } from "../commandPaletteStore";
 import { type CommandPaletteOverlayTab } from "./CommandPalette.logic";
 import { Command, CommandFooter, CommandInput, CommandPanel } from "./ui/command";
 import { Kbd, KbdGroup } from "./ui/kbd";
+
+const COMMAND_PALETTE_OVERLAY_TABS = [
+  "all",
+  "actions",
+  "threads",
+  "projects",
+  "files",
+  "content",
+] as const satisfies ReadonlyArray<CommandPaletteOverlayTab>;
+
+// File and content search remount the footer. Carry the keyboard focus target across that mount.
+export const CommandPaletteTabFocusContext =
+  createContext<RefObject<CommandPaletteOverlayTab | null> | null>(null);
 
 /**
  * A view replacing another inside an open dialog mounts with focus on the body,
@@ -15,6 +34,7 @@ import { Kbd, KbdGroup } from "./ui/kbd";
  */
 function claimFocusInOpenDialog(input: HTMLInputElement) {
   const active = input.ownerDocument.activeElement;
+  if (active?.matches('[role="tab"]')) return;
   if (
     active === null ||
     active === input.ownerDocument.body ||
@@ -44,21 +64,22 @@ function restorePendingSelection(
 
 export function CommandPaletteSearchTabs({
   activeTab,
+  query,
 }: {
   readonly activeTab: CommandPaletteOverlayTab;
+  readonly query: string;
 }) {
   const gt = useGT();
-  const tabs: ReadonlyArray<{
-    readonly id: CommandPaletteOverlayTab;
-    readonly label: string;
-  }> = [
-    { id: "all", label: gt("All") },
-    { id: "actions", label: gt("Actions") },
-    { id: "threads", label: gt("Threads") },
-    { id: "projects", label: gt("Projects") },
-    { id: "files", label: gt("Files") },
-    { id: "content", label: gt("Text") },
-  ];
+  const pendingTabFocusRef = useContext(CommandPaletteTabFocusContext);
+  const labels = {
+    all: gt("All"),
+    actions: gt("Actions"),
+    threads: gt("Threads"),
+    projects: gt("Projects"),
+    files: gt("Files"),
+    content: gt("Text"),
+  };
+  const tabs = COMMAND_PALETTE_OVERLAY_TABS;
 
   return (
     <div
@@ -66,15 +87,20 @@ export function CommandPaletteSearchTabs({
       aria-label={gt("Search")}
       className="flex min-w-0 flex-wrap items-center gap-1"
     >
-      {tabs.map((tab) => {
-        const active = tab.id === activeTab;
+      {tabs.map((tab, index) => {
+        const active = tab === activeTab;
         return (
           <button
-            key={tab.id}
+            key={tab}
             type="button"
             role="tab"
             aria-selected={active}
             tabIndex={active ? 0 : -1}
+            ref={(button) => {
+              if (!button || !active || pendingTabFocusRef?.current !== tab) return;
+              pendingTabFocusRef.current = null;
+              button.focus();
+            }}
             className={cn(
               "cursor-pointer rounded-md px-2 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
               active
@@ -85,10 +111,35 @@ export function CommandPaletteSearchTabs({
               event.preventDefault();
             }}
             onClick={() => {
-              dispatchCommandPalette({ _tag: "SelectTab", tab: tab.id });
+              if (!active) dispatchCommandPalette({ _tag: "SelectTab", tab, query });
+            }}
+            onKeyDown={(event) => {
+              let nextIndex: number;
+              switch (event.key) {
+                case "ArrowLeft":
+                  nextIndex = (index + tabs.length - 1) % tabs.length;
+                  break;
+                case "ArrowRight":
+                  nextIndex = (index + 1) % tabs.length;
+                  break;
+                case "Home":
+                  nextIndex = 0;
+                  break;
+                case "End":
+                  nextIndex = tabs.length - 1;
+                  break;
+                default:
+                  return;
+              }
+              event.preventDefault();
+              event.stopPropagation();
+              const nextTab = tabs[nextIndex]!;
+              if (nextTab === activeTab) return;
+              if (pendingTabFocusRef) pendingTabFocusRef.current = nextTab;
+              dispatchCommandPalette({ _tag: "SelectTab", tab: nextTab, query });
             }}
           >
-            {tab.label}
+            {labels[tab]}
           </button>
         );
       })}
@@ -124,6 +175,7 @@ export function CommandPaletteContent({
   testId,
   ...commandProps
 }: CommandPaletteContentProps) {
+  const pendingTabFocusRef = useContext(CommandPaletteTabFocusContext);
   return (
     <div className="contents" data-testid={testId}>
       <Command {...commandProps}>
@@ -134,6 +186,10 @@ export function CommandPaletteContent({
             ref={(input) => {
               if (!input) return;
               restorePendingSelection(input, pendingSelectionRef);
+              if (pendingTabFocusRef?.current) {
+                if (footerLeading !== undefined) return;
+                pendingTabFocusRef.current = null;
+              }
               claimFocusInOpenDialog(input);
             }}
           />

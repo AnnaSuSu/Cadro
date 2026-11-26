@@ -11,6 +11,7 @@ import {
   buildLinkedThreadActionItems,
   filterPinnedBrowseEntries,
   filterCommandPaletteGroups,
+  canReturnToCommand,
   reduceCommandPaletteUiState,
   resolveAddProjectEntry,
   createCommandPaletteSearchState,
@@ -101,10 +102,25 @@ describe("reduceCommandPaletteUiState", () => {
     expect(state).toMatchObject({ open: true, openIntent: { kind: "new-thread-in" }, session: 1 });
     state = reduceCommandPaletteUiState(state, { _tag: "ToggleMode", mode: "files" });
     expect(state).toMatchObject({ mode: "files", openIntent: null, session: 1 });
+    expect(canReturnToCommand(state)).toBe(true);
     state = reduceCommandPaletteUiState(state, { _tag: "OpenAddProject" });
     expect(state).toMatchObject({
       mode: "command",
       openIntent: { kind: "add-project" },
+      session: 2,
+    });
+  });
+
+  it("starts a fresh command session on the requested tab", () => {
+    const state = reduceCommandPaletteUiState(
+      { open: true, mode: "content", tabQuery: "old query", openIntent: null, session: 1 },
+      { _tag: "OpenSearch", tab: "threads", query: "" },
+    );
+    expect(state).toEqual({
+      open: true,
+      mode: "command",
+      commandTab: "threads",
+      openIntent: { kind: "search", query: "" },
       session: 2,
     });
   });
@@ -941,18 +957,39 @@ describe("returning from file and content search", () => {
     const closed = reduceCommandPaletteUiState(child, { _tag: "SetOpen", open: false });
     expect(closed).toEqual({ open: false, mode: "files", openIntent: null, session: 0 });
     expect(reduceCommandPaletteUiState(closed, { _tag: "BackToCommand" })).toEqual(closed);
-    expect(reduceCommandPaletteUiState(closed, { _tag: "SetOpen", open: true })).toEqual(root);
+    expect(reduceCommandPaletteUiState(closed, { _tag: "SetOpen", open: true })).toEqual({
+      ...root,
+      session: 1,
+    });
   });
 
   it("switches between command filter tabs, files, and content modes via SelectTab", () => {
-    const threads = reduceCommandPaletteUiState(root, { _tag: "SelectTab", tab: "threads" });
-    expect(threads).toEqual({ ...root, mode: "command", commandTab: "threads" });
-    const files = reduceCommandPaletteUiState(threads, { _tag: "SelectTab", tab: "files" });
-    expect(files).toEqual({ ...root, mode: "files" });
-    const content = reduceCommandPaletteUiState(files, { _tag: "SelectTab", tab: "content" });
-    expect(content).toEqual({ ...root, mode: "content" });
-    const backToAll = reduceCommandPaletteUiState(content, { _tag: "SelectTab", tab: "all" });
-    expect(backToAll).toEqual(root);
+    const select = (
+      state: CommandPaletteUiState,
+      tab: "threads" | "files" | "content" | "all",
+      query: string,
+    ) => reduceCommandPaletteUiState(state, { _tag: "SelectTab", tab, query });
+    const threads = select(root, "threads", "sidebar");
+    expect(threads).toEqual({ ...root, commandTab: "threads", tabQuery: "sidebar" });
+    const files = select(threads, "files", "> sidebar");
+    expect(files).toEqual({ ...root, mode: "files", tabQuery: "sidebar" });
+    const content = select(files, "content", "sidebar.ts");
+    expect(content).toEqual({ ...root, mode: "content", tabQuery: "sidebar.ts" });
+    expect(canReturnToCommand(content)).toBe(false);
+    const backToAll = select(content, "all", "sidebar");
+    expect(backToAll).toEqual({ ...root, tabQuery: "sidebar" });
+  });
+
+  it.each([
+    { _tag: "SetOpen", open: false },
+    { _tag: "ToggleMode", mode: "files" },
+    { _tag: "OpenAddProject" },
+    { _tag: "OpenNewThreadIn" },
+    { _tag: "OpenChangeTheme" },
+    { _tag: "OpenSearch", query: "fresh" },
+  ] as const)("clears the carried query on $_tag", (action) => {
+    const files: CommandPaletteUiState = { ...root, mode: "files", tabQuery: "sidebar" };
+    expect(reduceCommandPaletteUiState(files, action).tabQuery).toBeUndefined();
   });
 });
 
