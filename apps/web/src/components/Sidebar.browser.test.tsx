@@ -9,6 +9,7 @@ import {
   EnvironmentId,
   type LocalApi,
   ProjectId,
+  RunId,
   ThreadId,
   type ScopedThreadRef,
 } from "@cadro/contracts";
@@ -248,6 +249,73 @@ it("shows empty projects and keeps extra project threads one click away", async 
   expect(navigateToDraft).toHaveBeenCalledExactlyOnceWith(
     scopeProjectRef(empty.environmentId, empty.id),
   );
+});
+
+it("keeps running threads in send order in project folders and Recents", async () => {
+  using stack = new DisposableStack();
+  isolateDrafts(stack);
+  const previousSettings = getClientSettings();
+  stack.defer(() => __setClientSettingsForTests(previousSettings));
+  __setClientSettingsForTests(DEFAULT_CLIENT_SETTINGS);
+  const active = project("running-project");
+  vi.mocked(useProjects).mockReturnValue([active]);
+  vi.mocked(useThreadRouteTarget).mockReturnValue(null);
+
+  const time = (hour: number) => new Date(Date.UTC(2026, 0, 1, hour)).toISOString();
+  const pinned = { ...threadShell(active.id, 0), pinnedAt: time(1) };
+  const running = (
+    index: number,
+    createdAt: string,
+    latestUserAuthoredMessageAt: string | null,
+  ) => {
+    const thread = threadShell(active.id, index);
+    return {
+      ...thread,
+      createdAt,
+      latestUserAuthoredMessageAt,
+      updatedAt: time(5),
+      runtime: {
+        status: "running" as const,
+        activeRunId: RunId.make(`run-${index}`),
+        providerInstanceId: thread.providerInstanceId,
+        providerName: null,
+        lastError: null,
+        updatedAt: time(5),
+      },
+    };
+  };
+  const lastSent = running(1, time(2), time(4));
+  const lastCreated = running(2, time(3), null);
+  vi.mocked(useQuietThreadShells).mockReturnValue([lastSent, lastCreated]);
+  const tree = () => (
+    <SidebarProvider>
+      <Sidebar routeReveal={{ observedKey: null, pendingKey: null }} />
+    </SidebarProvider>
+  );
+  await using screen = await render(tree());
+  const rowTitles = () =>
+    screen
+      .getByText(/^Thread [012]$/)
+      .elements()
+      .map((title) => title.textContent);
+  const initialOrder = [lastSent.title, lastCreated.title];
+  expect(rowTitles()).toEqual([...initialOrder, ...initialOrder]);
+
+  const lastCreatedUpdated = { ...lastCreated, updatedAt: time(6) };
+  vi.mocked(useQuietThreadShells).mockReturnValue([lastSent, lastCreatedUpdated]);
+  await screen.rerender(tree());
+  expect(rowTitles()).toEqual([...initialOrder, ...initialOrder]);
+
+  const lastSentUpdated = { ...lastSent, updatedAt: time(7) };
+  vi.mocked(useQuietThreadShells).mockReturnValue([lastSentUpdated, lastCreatedUpdated, pinned]);
+  await screen.rerender(tree());
+  expect(rowTitles()).toEqual([pinned.title, ...initialOrder, ...initialOrder, pinned.title]);
+
+  const sentAgain = { ...lastCreatedUpdated, latestUserAuthoredMessageAt: time(8) };
+  vi.mocked(useQuietThreadShells).mockReturnValue([lastSentUpdated, sentAgain, pinned]);
+  await screen.rerender(tree());
+  const newOrder = [sentAgain.title, lastSent.title];
+  expect(rowTitles()).toEqual([pinned.title, ...newOrder, ...newOrder, pinned.title]);
 });
 
 // Drafts survive page reloads and may belong to a previous browser test.

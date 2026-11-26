@@ -516,13 +516,7 @@ function useSidebarThreads(input: {
   );
   const folderLimit = 5;
   const projectModeThreads =
-    folderGroups === null
-      ? EMPTY_THREADS
-      : [...pinnedThreads, ...activeThreads].sort(
-          (left, right) =>
-            firstValidTimestampMs(right.updatedAt, right.createdAt) -
-            firstValidTimestampMs(left.updatedAt, left.createdAt),
-        );
+    folderGroups === null ? EMPTY_THREADS : [...pinnedThreads, ...activeThreads];
   const projectFolders =
     folderGroups === null
       ? null
@@ -549,8 +543,9 @@ function useSidebarThreads(input: {
   const visibleFolders = projectsExpanded ? (projectFolders ?? []) : [];
   const folderThreads = visibleFolders.flatMap((folder) => folder.threads);
   const folderThreadKeys = new Set(folderThreads.map(threadShellKey));
+  const allRecentThreads =
+    projectFolders === null ? EMPTY_THREADS : sortWorkingThreadsBySend(projectModeThreads);
   const [recentsLimit, setRecentsLimit] = useState(15);
-  const allRecentThreads = projectFolders === null ? EMPTY_THREADS : projectModeThreads;
   const recentThreads =
     projectFolders === null
       ? []
