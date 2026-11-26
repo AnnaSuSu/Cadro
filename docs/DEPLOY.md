@@ -125,3 +125,8 @@ To create installers, run the target on its native operating system. These comma
 Use `rustup target add <target>` to install the required Rust target. On Ubuntu 24.04, install the native dependencies with `sudo apt-get install build-essential libsecret-1-dev pkg-config imagemagick`.
 
 Local macOS builds use ad-hoc signatures. Windows installers are unsigned by default. The GitHub release workflow builds on `v*` tags and can also be run manually against an existing tag. Set `CSC_LINK` and `CSC_KEY_PASSWORD` for Developer ID signing, plus `APPLE_API_KEY` (the key contents), `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER` for notarization. Windows signing uses the optional Azure Trusted Signing secrets listed in the workflow. [Desktop release workflow](../.github/workflows/release-desktop.yml)
+
+macOS can ask for access to **cadro Safe Storage** when Cadro reads encrypted
+connection settings. Ad-hoc builds lack a stable Developer ID identity, so
+replacing the app can prompt again. Use the same Developer ID for releases
+and submit each release for notarization.
