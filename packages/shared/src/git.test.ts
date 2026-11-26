@@ -263,7 +263,9 @@ describe("isTemporaryWorktreeBranch", () => {
     );
   });
 
-  it("matches legacy t3code temporary worktree refs", () => {
+  it("matches temporary refs created by older versions", () => {
+    expect(isTemporaryWorktreeBranch("t3/deadbeef")).toBe(true);
+    expect(isTemporaryWorktreeBranch("t3-deadbeef")).toBe(true);
     expect(isTemporaryWorktreeBranch("t3code/deadbeef")).toBe(true);
     expect(isTemporaryWorktreeBranch("t3code-deadbeef")).toBe(true);
     expect(isTemporaryWorktreeBranch("t3code/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(true);
@@ -277,21 +279,18 @@ describe("isTemporaryWorktreeBranch", () => {
     expect(isTemporaryWorktreeBranch("t3code/f4ae4e0e-f971-4d48-c4f2-9cf0aa54ab12")).toBe(false);
   });
 
-  it("matches the flat fallback used when a plain t3 branch exists", () => {
+  it("matches the flat fallback used when a branch blocks nested refs", () => {
     const flat = flattenTemporaryWorktreeBranchName(`${WORKTREE_BRANCH_PREFIX}/deadbeef`);
     expect(flat).toBe(`${WORKTREE_BRANCH_PREFIX}-deadbeef`);
     expect(isTemporaryWorktreeBranch(flat)).toBe(true);
     expect(isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}-deadbeef-extra`)).toBe(false);
     expect(isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}-feature`)).toBe(false);
+    expect(flattenTemporaryWorktreeBranchName("t3/deadbeef")).toBe("t3-deadbeef");
     expect(flattenTemporaryWorktreeBranchName("t3code/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(
-      `${WORKTREE_BRANCH_PREFIX}-f4ae4e0e`,
+      "t3-f4ae4e0e",
     );
-    expect(flattenTemporaryWorktreeBranchName("t3code-deadbeef")).toBe(
-      `${WORKTREE_BRANCH_PREFIX}-deadbeef`,
-    );
-    expect(flattenTemporaryWorktreeBranchName("t3code/deadbeef")).toBe(
-      `${WORKTREE_BRANCH_PREFIX}-deadbeef`,
-    );
+    expect(flattenTemporaryWorktreeBranchName("t3code-deadbeef")).toBe("t3-deadbeef");
+    expect(flattenTemporaryWorktreeBranchName("t3code/deadbeef")).toBe("t3-deadbeef");
   });
 
   it("rejects non-temporary refName names", () => {
