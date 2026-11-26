@@ -19,7 +19,7 @@ const USERNS_RESTRICTION = "/proc/sys/kernel/apparmor_restrict_unprivileged_user
 export const APPARMOR_PROFILE_PATH = "/etc/apparmor.d/t3-chrome-headless-shell";
 
 /** Match Ubuntu's Chrome profile; unconfined adds nothing beyond userns. */
-export const APPARMOR_PROFILE = `# Written by \`t3 browser setup\`: lets Cadro's headless browser use Chrome's sandbox.
+export const APPARMOR_PROFILE = `# Written by \`cadro browser setup\`: lets Cadro's headless browser use Chrome's sandbox.
 abi <abi/4.0>,
 include <tunables/global>
 
@@ -75,7 +75,7 @@ export class PreviewBrowserRootError extends Schema.TaggedError<PreviewBrowserRo
   {},
 ) {
   override get message(): string {
-    return "Cadro server is running as root; Chrome's sandbox cannot start. Run Cadro as a nonroot user. Otherwise set `CADRO_SERVER_BROWSER_SANDBOX=0` in the Cadro server's environment and restart the server; this disables Chrome's sandbox. Manual: `CADRO_SERVER_BROWSER_SANDBOX=0 t3 serve`. Systemd: add `Environment=CADRO_SERVER_BROWSER_SANDBOX=0` under `[Service]`, reload systemd, then restart the service. `t3 browser setup` cannot fix root sandboxing.";
+    return "Cadro server is running as root; Chrome's sandbox cannot start. Run Cadro as a nonroot user. Otherwise set `CADRO_SERVER_BROWSER_SANDBOX=0` in the Cadro server's environment and restart the server; this disables Chrome's sandbox. Manual: `CADRO_SERVER_BROWSER_SANDBOX=0 cadro serve`. Systemd: add `Environment=CADRO_SERVER_BROWSER_SANDBOX=0` under `[Service]`, reload systemd, then restart the service. `cadro browser setup` cannot fix root sandboxing.";
   }
 }
 
