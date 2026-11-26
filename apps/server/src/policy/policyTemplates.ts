@@ -1,5 +1,6 @@
 import type { ManagedPolicyDocument } from "@cadro/contracts";
 import {
+  MACOS_POLICY_DOMAIN,
   WINDOWS_POLICY_KEY,
   WINDOWS_POLICY_GROUPS,
   WINDOWS_POLICY_LISTS,
@@ -164,7 +165,7 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Settings",
     title: "Managed settings (JSON)",
-    help: 'Defaults and locks for server settings, as the "settings" object of a Cadro policy. Each key is a setting path; each value is {"value": ..., "locked": true|false}.\n\nExample: {"enableAgentBrowserAccess": {"value": false, "locked": true}}\n\nRun "t3 policy check" on a policy file with the same object to validate it first.',
+    help: 'Defaults and locks for server settings, as the "settings" object of a Cadro policy. Each key is a setting path; each value is {"value": ..., "locked": true|false}.\n\nExample: {"enableAgentBrowserAccess": {"value": false, "locked": true}}\n\nRun "cadro policy check" on a policy file with the same object to validate it first.',
     elements: [{ kind: "text", name: "Settings", label: "Settings JSON", json: true }],
   },
   {
@@ -359,7 +360,7 @@ export function macosProfile(
       {
         PayloadDisplayName: "Cadro policy",
         PayloadIdentifier: `dev.cadro.app.policy.${uuids.payload}`,
-        PayloadType: "dev.cadro.app",
+        PayloadType: MACOS_POLICY_DOMAIN,
         PayloadUUID: uuids.payload,
         PayloadVersion: 1,
         ...document,

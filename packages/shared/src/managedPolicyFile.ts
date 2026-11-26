@@ -28,7 +28,7 @@ export class ManagedPolicyFileError extends Schema.TaggedError<ManagedPolicyFile
   override readonly [Runtime.errorExitCode] = SERVER_EXIT_CODE_MANAGED_POLICY;
 
   override get message(): string {
-    return `T3 Code cannot use the managed policy at ${this.path}: ${this.reason}. It will not start until an administrator fixes this.`;
+    return `Cadro cannot use the managed policy at ${this.path}: ${this.reason}. It will not start until an administrator fixes this.`;
   }
 }
 
@@ -95,8 +95,9 @@ export const readManagedPolicyFile = Effect.fn("readManagedPolicyFile")(function
 });
 
 /** Where a configuration profile's managed preferences land on macOS. */
-export const MACOS_MANAGED_PREFERENCES_PATH =
-  "/Library/Managed Preferences/com.t3tools.t3code.plist";
+export const MACOS_POLICY_DOMAIN = "dev.cadro.app";
+export const MACOS_MANAGED_PREFERENCES_PATH = `/Library/Managed Preferences/${MACOS_POLICY_DOMAIN}.plist`;
+const LEGACY_MACOS_PROFILE = "/Library/Managed Preferences/com.t3tools.t3code.plist";
 const WINDOWS_POLICY_SUBKEY = "SOFTWARE\\Policies\\T3Tools\\T3Code";
 /**
  * The registry key Group Policy and Intune write to on Windows. It holds either the Group Policy
@@ -429,7 +430,7 @@ function windowsPolicyDocument(
     }
     if (Object.hasOwn(WINDOWS_POLICY_GROUPS, value.name)) continue;
     if (!Object.hasOwn(WINDOWS_POLICY_VALUES, value.name)) {
-      return { error: `${value.name} is not a T3 Code policy value` };
+      return { error: `${value.name} is not a Cadro policy value` };
     }
     const field = WINDOWS_POLICY_VALUES[value.name as keyof typeof WINDOWS_POLICY_VALUES];
     if (field.type === "boolean") {
@@ -456,7 +457,7 @@ function windowsPolicyDocument(
   if (Object.keys(document).length === 1) return { document: undefined };
   // The schema would name `["organization"]`, which an admin cannot map to a Group Policy setting.
   if (document.organization === undefined) {
-    return { error: "set the Organization policy whenever another T3 Code policy is set" };
+    return { error: "set the Organization policy whenever another Cadro policy is set" };
   }
   return { document };
 }
@@ -498,16 +499,31 @@ const readPlatformPolicy = Effect.fnUntraced(function* (
   knownDrivers: ReadonlyArray<string>,
 ) {
   if (platform === "darwin") {
-    const path = MACOS_MANAGED_PREFERENCES_PATH;
-    const exists = yield* (yield* FileSystem.FileSystem)
-      .exists(path)
-      .pipe(
-        Effect.mapError(
-          (cause) =>
-            new ManagedPolicyFileError({ path, reason: "the profile cannot be checked", cause }),
-        ),
-      );
-    if (!exists) return undefined;
+    const fs = yield* FileSystem.FileSystem;
+    const paths = yield* Effect.filter(
+      [MACOS_MANAGED_PREFERENCES_PATH, LEGACY_MACOS_PROFILE],
+      (path) =>
+        fs
+          .exists(path)
+          .pipe(
+            Effect.mapError(
+              (cause) =>
+                new ManagedPolicyFileError({
+                  path,
+                  reason: "the profile cannot be checked",
+                  cause,
+                }),
+            ),
+          ),
+    );
+    const [path, other] = paths;
+    if (path === undefined) return undefined;
+    if (other !== undefined) {
+      return yield* new ManagedPolicyFileError({
+        path,
+        reason: `another managed profile exists at ${other}; deploy the policy one way`,
+      });
+    }
     const converted = yield* run(PLUTIL, ["-convert", "json", "-o", "-", path]).pipe(
       Effect.mapError(
         (cause) =>
@@ -530,7 +546,7 @@ const readPlatformPolicy = Effect.fnUntraced(function* (
               path,
               reason:
                 cause.code === undefined
-                  ? "this T3 Code install cannot load its registry reader; reinstall T3 Code"
+                  ? "this Cadro install cannot load its registry reader; reinstall Cadro"
                   : `the registry cannot be read (${cause.message})`,
               cause,
             }),
@@ -563,11 +579,11 @@ const readPlatformPolicy = Effect.fnUntraced(function* (
       const list = Object.keys(WINDOWS_POLICY_LISTS).find(
         (name) => name.toLowerCase() === subkey.toLowerCase(),
       );
-      if (list === undefined) return yield* refuse(`${subkey} is not a T3 Code policy key`);
+      if (list === undefined) return yield* refuse(`${subkey} is not a Cadro policy key`);
       const checkboxes = yield* readKey(`${WINDOWS_POLICY_SUBKEY}\\${subkey}`);
       if (checkboxes === undefined) continue;
       if (checkboxes.subkeys.length > 0) {
-        return yield* refuse(`${subkey}\\${checkboxes.subkeys[0]} is not a T3 Code policy key`);
+        return yield* refuse(`${subkey}\\${checkboxes.subkeys[0]} is not a Cadro policy key`);
       }
       values.push(...checkboxes.values.map((value) => ({ ...value, key: list })));
     }
