@@ -53,6 +53,7 @@ import * as OrchestrationEventStore from "../src/persistence/OrchestrationEventS
 import * as EventStore from "../src/orchestration-v2/EventStore.ts";
 import * as EventSink from "../src/orchestration-v2/EventSink.ts";
 import * as ProjectionStore from "../src/orchestration-v2/ProjectionStore.ts";
+import { restoreLegacySettlement } from "../src/orchestration-v2/testkit/legacySettlement.ts";
 import * as ThreadManagementService from "../src/orchestration-v2/ThreadManagementService.ts";
 import * as ProjectStore from "../src/orchestration-v2/ProjectStore.ts";
 import * as ProjectService from "../src/project/ProjectService.ts";
@@ -542,7 +543,9 @@ it.live("reports V2 thread HTTP and WebSocket transfer budgets", () =>
           const earlierThreads = decodedShell.threads.length + 1;
           // The fleet's project is in a repository. Earlier phases have no project, as on `main`.
           yield* (yield* ProjectStore.ProjectStoreV2).apply(fleetProjectCreated);
-          yield* sink.write({ events: shellFleetEvents(provider) });
+          const fleetEvents = shellFleetEvents(provider);
+          yield* sink.write({ events: fleetEvents });
+          yield* Effect.forEach(fleetEvents, restoreLegacySettlement, { discard: true });
           const fleetShellLegacy = yield* readShell("");
           const fleetShell = yield* readShell(CLIENT_SHELL_QUERY);
           assert.equal(

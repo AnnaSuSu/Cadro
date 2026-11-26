@@ -22,6 +22,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as SqlClient from "effect/sql/SqlClient";
+import { restoreLegacySettlement } from "./testkit/legacySettlement.ts";
 import { serializeAssistantCitation } from "@cadro/shared/assistantCitations";
 import { ATTACHMENT_ONLY_BOOTSTRAP_PROMPT } from "@cadro/shared/composerContextReferences";
 import { EXACT_PHRASE_GAP } from "@cadro/shared/paletteSearch";
@@ -1213,10 +1214,15 @@ it.layer(layerTest)("ThreadSearch across scripts and without the index", (it) =>
   );
 });
 
+const applyLegacySearchEvent = Effect.fn(function* (event: OrchestrationV2DomainEvent) {
+  const projections = yield* ProjectionStore.ProjectionStoreV2;
+  yield* projections.apply(event);
+  yield* restoreLegacySettlement(event);
+});
+
 it.layer(layerTest)("ThreadSearch.searchOlderSettled", (it) => {
   it.effect("returns older settled title matches in scope, then older message hits", () =>
     Effect.gen(function* () {
-      const projections = yield* ProjectionStore.ProjectionStoreV2;
       const search = yield* ThreadSearch.ThreadSearch;
       const project = ProjectId.make("project:kestrel");
       const other = ProjectId.make("project:kestrel-other");
@@ -1244,7 +1250,7 @@ it.layer(layerTest)("ThreadSearch.searchOlderSettled", (it) => {
             archivedAt: old,
           }),
         ],
-        projections.apply,
+        applyLegacySearchEvent,
         { discard: true },
       );
       const before = DateTime.formatIso(at(30));
@@ -1278,7 +1284,6 @@ it.layer(layerTest)("ThreadSearch.searchOlderSettled", (it) => {
 
   it.effect("matches the branch and linked pull requests, like the palette", () =>
     Effect.gen(function* () {
-      const projections = yield* ProjectionStore.ProjectionStoreV2;
       const search = yield* ThreadSearch.ThreadSearch;
       const project = ProjectId.make("project:heron");
       yield* createProject(project);
@@ -1303,7 +1308,7 @@ it.layer(layerTest)("ThreadSearch.searchOlderSettled", (it) => {
             linkedPullRequest: pullRequest(4202),
           }),
         ],
-        projections.apply,
+        applyLegacySearchEvent,
         { discard: true },
       );
       const find = (query: string) =>
@@ -1334,7 +1339,7 @@ it.layer(layerTest)("ThreadSearch.searchThreadsWithOlderSettledRows", (it) => {
           thread(recent, project, { title: "Plover nest", settledAt: at(50) }),
           message(recent, "plover-note", "user", "a plover note", { minute: 2 }),
         ],
-        projections.apply,
+        applyLegacySearchEvent,
         { discard: true },
       );
       const run = (request: { readonly titlesOnly?: boolean }) =>

@@ -3306,7 +3306,7 @@ it.effect("SQL shells read a subagent family and a worktree's threads", () =>
   }).pipe(Effect.provide(layerTest)),
 );
 
-it.effect("SQL list older settled threads below a cursor", () =>
+it.effect("keeps replayed legacy settlement out of the older-threads listing", () =>
   Effect.gen(function* () {
     const store = yield* ProjectionStore.ProjectionStoreV2;
     const now = yield* DateTime.now;
@@ -3370,33 +3370,15 @@ it.effect("SQL list older settled threads below a cursor", () =>
       projectIds?: ReadonlyArray<ProjectId>,
     ) => store.listOlderSettledThreads({ before, projectIds, limit });
     const before = { settledAt: DateTime.formatIso(at(10)) };
-    const first = yield* list(before, 2);
-    assert.deepEqual(first, { threadIds: [id("a"), id("b")], counts: [] });
-    assert.sameDeepMembers(
-      [...(yield* list(before, 0)).counts],
-      [
-        { projectId: ProjectId.make("project:a"), count: 4 },
-        { projectId: ProjectId.make("project:b"), count: 1 },
-      ],
+    const empty = { threadIds: [], counts: [] };
+    assert.deepEqual(yield* list(before, 2), empty);
+    assert.deepEqual(yield* list(before, 0), empty);
+    assert.deepEqual(yield* list(before, 0, [ProjectId.make("project:b")]), empty);
+    assert.deepEqual(
+      yield* list({ settledAt: DateTime.formatIso(at(4)), threadId: id("b") }, 10),
+      empty,
     );
-    // A cursor without an id is strict, as the snapshot's cut is: the day-4 tie is not counted.
-    assert.sameDeepMembers(
-      [...(yield* list({ settledAt: DateTime.formatIso(at(4)) }, 0)).counts],
-      [
-        { projectId: ProjectId.make("project:a"), count: 1 },
-        { projectId: ProjectId.make("project:b"), count: 1 },
-      ],
-    );
-    // The cursor is the last row: the tie on day 4 continues by id.
-    const next = yield* list({ settledAt: DateTime.formatIso(at(4)), threadId: id("b") }, 10);
-    assert.deepEqual(next.threadIds, [id("c"), id("d"), id("snoozed")]);
-    assert.deepEqual(yield* list(before, 25, []), { threadIds: [], counts: [] });
     yield* assertShellIndexCoversShells();
-    const scoped = yield* list(before, 0, [ProjectId.make("project:b")]);
-    assert.deepEqual(scoped, {
-      threadIds: [],
-      counts: [{ projectId: ProjectId.make("project:b"), count: 1 }],
-    });
   }).pipe(Effect.provide(layerTest)),
 );
 
@@ -9313,7 +9295,7 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
     }),
   );
 
-  it.effect("does not freshly arm limit recovery for a subagent of a put-away parent", () =>
+  it.effect("arms child recovery for active and formerly settled parents", () =>
     Effect.gen(function* () {
       const store = yield* ProjectionStore.ProjectionStoreV2;
       const now = yield* DateTime.now;
@@ -9456,13 +9438,9 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
               )?.type === "thread.metadata.update",
           )
           .map((row) => row.id);
-        assert.deepEqual(
-          armed,
-          [activeParentChild],
-          `only the child of the open parent is armed (${JSON.stringify(options)})`,
-        );
+        assert.sameMembers(armed, [activeParentChild, settledParentChild]);
       }
-      // A recovery armed before the parent settled still resumes at its reset.
+      // A child of a formerly settled parent still resumes at its reset.
       yield* store.apply({
         id: EventId.make("event:settled-parent-limit:settled:armed"),
         type: "thread.metadata-updated",

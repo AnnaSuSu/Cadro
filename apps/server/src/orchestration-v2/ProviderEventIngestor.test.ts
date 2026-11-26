@@ -218,6 +218,8 @@ function threadCreatedEvent(
       archivedAt: null,
       settledOverride: null,
       settledAt: null,
+      unsettledAt: null,
+      autoSettleDisabledAt: null,
       lastVisitedAt: null,
       deletedAt: null,
     };
