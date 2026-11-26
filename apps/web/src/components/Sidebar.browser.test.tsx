@@ -682,6 +682,73 @@ describe("sidebar thread menu", () => {
         .closest(`[data-sidebar-row="recent:${projectThread.environmentId}:${projectThread.id}"]`),
     ).not.toBeNull();
   });
+
+  it("keeps scroll and selection on Recents when clicking a project thread from Recents", async () => {
+    using stack = new DisposableStack();
+    isolateDrafts(stack);
+    const previousSettings = getClientSettings();
+    stack.defer(() => __setClientSettingsForTests(previousSettings));
+    __setClientSettingsForTests(DEFAULT_CLIENT_SETTINGS);
+
+    const activeProject = project("active");
+    const first = threadShell(activeProject.id, 0);
+    const second = threadShell(activeProject.id, 1);
+    const firstRef = scopeThreadRef(activeProject.environmentId, first.id);
+    const secondRef = scopeThreadRef(activeProject.environmentId, second.id);
+    vi.mocked(useProjects).mockReturnValue([activeProject]);
+    vi.mocked(useQuietThreadShells).mockReturnValue([first, second]);
+    vi.mocked(useThreadRouteTarget).mockReturnValue({ kind: "server", threadRef: firstRef });
+    vi.mocked(useHandleNewThread).mockReturnValue({
+      activeDraftThread: null,
+      activeThread: null,
+      defaultProjectRef: {
+        environmentId: activeProject.environmentId,
+        projectId: activeProject.id,
+      },
+      defaultProjectFallbackReady: true,
+      handleNewThread: vi.fn().mockResolvedValue(null),
+      routeDraftId: null,
+      routeThreadRef: firstRef,
+    });
+
+    const reveal = { observedKey: null, pendingKey: null };
+    const tree = () => (
+      <SidebarProvider>
+        <Sidebar routeReveal={reveal} />
+      </SidebarProvider>
+    );
+    await using screen = await render(tree(), { router: "/local/thread-0" });
+
+    const secondFolderSelector = `[data-sidebar-row="${second.environmentId}:${second.id}"]`;
+    const secondRecentSelector = `[data-sidebar-row="recent:${second.environmentId}:${second.id}"]`;
+    const secondRecentRow = screen.container.querySelector<HTMLElement>(secondRecentSelector);
+    expect(secondRecentRow).not.toBeNull();
+
+    using scrollIntoView = vi.spyOn(Element.prototype, "scrollIntoView");
+    await userEvent.click(secondRecentRow!);
+    vi.mocked(useThreadRouteTarget).mockReturnValue({ kind: "server", threadRef: secondRef });
+    await screen.rerender(tree());
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.container.querySelector(secondRecentSelector)?.getAttribute("aria-current")).toBe(
+      "page",
+    );
+    expect(
+      screen.container.querySelector(secondFolderSelector)?.getAttribute("aria-current"),
+    ).toBeNull();
+
+    const secondFolderRow = screen.container.querySelector<HTMLElement>(secondFolderSelector);
+    expect(secondFolderRow).not.toBeNull();
+    await userEvent.click(secondFolderRow!);
+    await screen.rerender(tree());
+
+    expect(screen.container.querySelector(secondFolderSelector)?.getAttribute("aria-current")).toBe(
+      "page",
+    );
+    expect(
+      screen.container.querySelector(secondRecentSelector)?.getAttribute("aria-current"),
+    ).toBeNull();
+  });
 });
 
 describe("retired settlement", () => {

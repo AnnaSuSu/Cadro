@@ -1133,10 +1133,27 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     routeThreadRef === null
       ? null
       : scopedThreadKey(resolveListedAncestorThreadRef(routeThreadRef, threads));
+  // Preserve selection in Recents when opened from there so the sidebar does not jump up to a duplicate folder row.
+  const [recentActiveThreadKey, setRecentActiveThreadKey] = useState<string | null>(null);
+  const [observedRouteRowKey, setObservedRouteRowKey] = useState(routeRowThreadKey);
+  if (observedRouteRowKey !== routeRowThreadKey) {
+    setObservedRouteRowKey(routeRowThreadKey);
+    if (
+      recentActiveThreadKey !== null &&
+      routeRowThreadKey !== null &&
+      routeRowThreadKey !== recentActiveThreadKey
+    ) {
+      setRecentActiveThreadKey(null);
+    }
+  }
+  const activeRecentThreadKey =
+    routeRowThreadKey !== null && recentActiveThreadKey === routeRowThreadKey
+      ? routeRowThreadKey
+      : null;
   const isSearchingThreads = threadSearchQuery.trim().length > 0;
   // The open draft's first send names its thread in place; a finalized draft reached by
   // navigation resolves through its redirect instead, and still reveals.
-  const routeKeyInPlace = routeDraftThread?.promotedTo != null;
+  const routeKeyInPlace = routeDraftThread?.promotedTo != null || activeRecentThreadKey !== null;
 
   // History, the palette and links can open a thread the scope hides or the list
   // scrolled away; a remount starts at the top, so each mount scrolls to the open
@@ -1478,11 +1495,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     return mapping;
   })();
 
-  const navigateToThread = (threadRef: ScopedThreadRef) => {
+  const navigateToThread = (
+    threadRef: ScopedThreadRef,
+    options?: { readonly fromRecent?: boolean },
+  ) => {
+    const threadKey = scopedThreadKey(threadRef);
+    setRecentActiveThreadKey(options?.fromRecent ? threadKey : null);
     if (useThreadSelectionStore.getState().selectedThreadKeys.size > 0) {
       clearSelection();
     }
-    setSelectionAnchor(scopedThreadKey(threadRef));
+    setSelectionAnchor(threadKey);
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -3352,6 +3374,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             ? "slim"
                             : "card";
                         const isRowRenaming = renamingThreadKey === threadKey && !renamingInRecents;
+                        const isRowActive =
+                          routeRowThreadKey === threadKey &&
+                          !(folderRow !== undefined && activeRecentThreadKey === threadKey);
                         return (
                           <SortableThreadRow
                             key={threadKey}
@@ -3397,10 +3422,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                 : null
                             }
                             wokeAt={threadWokeAt(thread, { now: snoozeNow })}
-                            isActive={routeRowThreadKey === threadKey}
-                            revealRef={
-                              routeRowThreadKey === threadKey ? revealActiveRow : undefined
-                            }
+                            isActive={isRowActive}
+                            revealRef={isRowActive ? revealActiveRow : undefined}
                             isRouteThread={routeThreadKey === threadKey}
                             readOpensPullRequestsInRightPanel={readOpensPullRequestsInRightPanel}
                             jumpLabel={
@@ -3518,7 +3541,12 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           for (const thread of recentThreads) {
                             const threadRef = scopeThreadRef(thread.environmentId, thread.id);
                             const key = threadShellKey(thread);
-                            const current = routeRowThreadKey === key && !folderThreadKeys.has(key);
+                            const current =
+                              routeRowThreadKey === key &&
+                              (activeRecentThreadKey === key || !folderThreadKeys.has(key));
+                            const recentRowRef = current
+                              ? (row: HTMLElement | null) => revealActiveRow(row, key)
+                              : undefined;
                             const isRenamingRecent = renamingThreadKey === key && renamingInRecents;
                             const status = resolveSidebarThreadStatus(thread);
                             const recentRowClassName = cn(
@@ -3529,6 +3557,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                               <li key={`recent:${key}`} className="list-none">
                                 {isRenamingRecent ? (
                                   <div
+                                    ref={recentRowRef}
                                     data-sidebar-row={`recent:${key}`}
                                     aria-current={current ? "page" : undefined}
                                     className={recentRowClassName}
@@ -3542,11 +3571,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                                   </div>
                                 ) : (
                                   <button
+                                    ref={recentRowRef}
                                     type="button"
                                     data-sidebar-row={`recent:${key}`}
                                     aria-current={current ? "page" : undefined}
                                     className={recentRowClassName}
-                                    onClick={() => void navigateToThread(threadRef)}
+                                    onClick={() =>
+                                      void navigateToThread(threadRef, { fromRecent: true })
+                                    }
                                     onKeyDown={(event) => {
                                       if (
                                         event.key === "F2" &&
