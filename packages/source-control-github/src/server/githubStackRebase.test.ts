@@ -86,6 +86,9 @@ it.layer(layer)("cascadeRebaseStack", (it) => {
       const top = yield* repo.head("feat/answer-doc");
       expect(yield* repo.git("rev-parse", `${bottom}~1`)).toBe(main);
       expect(yield* repo.git("rev-parse", `${top}~1`)).toBe(bottom);
+      expect(yield* repo.git("log", "-1", "--format=%an <%ae> | %cn <%ce>", top)).toBe(
+        "t <t@t> | Cadro <cadro@localhost>",
+      );
       expect(yield* repo.git("log", "--format=%s", `${bottom}..${top}`)).toBe(
         "B: document the answer",
       );
