@@ -16,11 +16,11 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          node-version: 24
+          node-version: 26
       - name: Install workspace dependencies
         run: |
-          corepack enable pnpm
-          corepack pnpm install --frozen-lockfile
+          npm install --global "$(node -p 'require("./package.json").packageManager')"
+          pnpm install --frozen-lockfile
       - name: Install browser and native dependencies
         run: |
           sudo apt-get update
