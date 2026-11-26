@@ -192,13 +192,21 @@ export const watchDirectoryPath = (
               ),
               Effect.map((target) => {
                 if (target === entry || target === NodePath.dirname(target)) return watchContents;
-                return watchDirectoryReplacements(
-                  (ready) => watchDirectoryEntry(NodePath.dirname(target), ready),
+                const parent = NodePath.dirname(target);
+                const parentWatch = watchDirectoryReplacements(
+                  (ready) => watchDirectoryEntry(parent, ready),
                   watchDirectoryReplacements(
                     (ready) => watchDirectoryEntry(target, ready),
                     watchContents,
                   ),
                 );
+                const grandparent = NodePath.dirname(parent);
+                return grandparent === NodePath.dirname(grandparent)
+                  ? parentWatch
+                  : watchDirectoryReplacements(
+                      (ready) => watchDirectoryEntry(grandparent, ready),
+                      parentWatch,
+                    );
               }),
             ),
           ),

@@ -57,15 +57,16 @@ it.live.each(["linked", "plain"] as const)(
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const base = yield* fs.makeTempDirectoryScoped();
-      const entry = path.join(base, "linked");
-      const first = path.join(base, "first", "themes");
-      const second = path.join(base, "second", "themes");
-      yield* fs.makeDirectory(first, { recursive: true });
-      yield* fs.makeDirectory(second, { recursive: true });
-      if (kind === "linked" && !symlinksSupported) return;
-      yield* kind === "linked" ? fs.symlink(first, entry) : fs.makeDirectory(entry);
-      const firstIdentity = yield* fs.stat(first);
-      const secondIdentity = yield* fs.stat(second);
+      const entry = path.join(silent.root, kind, "linked");
+      const first = path.join(silent.root, "targets", "first", "themes");
+      const secondDir = path.join(base, "second");
+      yield* fs.makeDirectory(secondDir);
+      const firstIdentity = yield* fs.stat(base);
+      const secondIdentity = yield* fs.stat(secondDir);
+      if (kind === "linked") {
+        silent.links.set(entry, first);
+        yield* Effect.addFinalizer(() => Effect.sync(() => silent.links.delete(entry)));
+      }
       let identity = firstIdentity;
       const events = yield* Queue.unbounded<"probe" | "refresh">();
 
@@ -76,6 +77,8 @@ it.live.each(["linked", "plain"] as const)(
           FileSystem.FileSystem,
           FileSystem.FileSystem.of({
             ...fs,
+            readLink: (file) =>
+              file === entry && kind === "linked" ? Effect.succeed(first) : fs.readLink(file),
             stat: (file) =>
               file === entry
                 ? Queue.offer(events, "probe").pipe(Effect.map(() => identity))
