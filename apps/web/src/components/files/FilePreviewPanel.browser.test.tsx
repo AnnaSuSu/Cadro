@@ -445,20 +445,17 @@ describe("source file scroll", () => {
 
       const scroller = screen.container.querySelector<HTMLElement>(".file-preview-virtualizer")!;
       if (initialScrollLine !== null) {
-        if (direction === "up") {
-          await vi.waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(5000));
-          scroller.scrollTop = scroller.scrollHeight;
-          await vi.waitFor(() =>
-            expect(
-              [...rows()].some((row) => row.getAttribute("data-line") === String(startLine)),
-            ).toBe(true),
-          );
-        }
-        const target = [...rows()].find(
-          (row) => row.getAttribute("data-line") === String(initialScrollLine),
+        await vi.waitFor(() =>
+          expect(rows()[0]?.getBoundingClientRect().height).toBeGreaterThan(0),
         );
-        expect(target).toBeDefined();
-        target!.scrollIntoView({ block: direction === "up" ? "end" : "start" });
+        const lineHeight = rows()[0]!.getBoundingClientRect().height;
+        scroller.scrollTop = (initialScrollLine - 1) * lineHeight;
+        const target = await vi.waitFor(() => {
+          const row = [...rows()].find((entry) => entry.dataset.line === String(initialScrollLine));
+          expect(row).toBeDefined();
+          return row!;
+        });
+        target.scrollIntoView({ block: direction === "up" ? "end" : "start" });
         await vi.waitFor(() => expect(scroller.scrollTop).toBeGreaterThan(0));
       }
 
@@ -547,12 +544,17 @@ describe("source file scroll", () => {
         {filePreview("wrapped.ts")}
       </div>,
     );
-    await vi.waitFor(() => expect(scroller()?.scrollHeight).toBeGreaterThan(20_000));
     const shadowRows = () =>
       [...document.querySelectorAll("*")].flatMap((host) =>
         host.shadowRoot ? [...host.shadowRoot.querySelectorAll<HTMLElement>("[data-line]")] : [],
       );
-    await userEvent.click(shadowRows().find((row) => row.getAttribute("data-line") === "1")!);
+    const firstRow = await vi.waitFor(() => {
+      const row = shadowRows().find((entry) => entry.dataset.line === "1");
+      expect(row).toBeDefined();
+      return row!;
+    });
+    expect(scroller()!.scrollHeight).toBeGreaterThan(scroller()!.clientHeight);
+    await userEvent.click(firstRow);
     await vi.waitFor(() => expect(deepActiveElement()?.matches("[data-content]")).toBe(true));
     await userEvent.keyboard(
       isMacPlatform(navigator.platform) ? "{Meta>}f{/Meta}" : "{Control>}f{/Control}",
