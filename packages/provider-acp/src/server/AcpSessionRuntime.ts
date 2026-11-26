@@ -1439,6 +1439,14 @@ export const make = Effect.fn("AcpSessionRuntime.make")(function* (
     logRequest({ method, payload, status: "started" }).pipe(
       Effect.flatMap(() =>
         (options.onStderr ? Effect.raceFirst(effect, Deferred.await(stderrFailure)) : effect).pipe(
+          // Closing the RPC scope after process exit can interrupt an in-flight request.
+          Effect.catchCauseIf(Cause.hasInterruptsOnly, (cause) =>
+            Ref.get(terminationErrorRef).pipe(
+              Effect.flatMap((error) =>
+                Option.isSome(error) ? Effect.fail(error.value) : Effect.failCause(cause),
+              ),
+            ),
+          ),
           Effect.catch((error) =>
             enrichProcessExitWithStderr(error).pipe(Effect.flatMap(Effect.fail)),
           ),
