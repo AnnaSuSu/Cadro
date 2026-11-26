@@ -28,6 +28,11 @@ T3 Code can use your installed Codex and its existing login. Run `codex login`
 on the environment's machine to sign in. [Provider setup](./install.md#providers)
 covers installation and custom configuration.
 
+On macOS, Cadro first uses the executable configured under **Binary path** or the
+`codex` on the server's PATH. When the default command is missing, Cadro also
+looks for the CLI bundled with ChatGPT or Codex in the user's and system
+Applications folders. This works when Cadro starts from Finder.
+
 Running `codex login` does not change a managed ChatGPT connection. In
 **Settings > Providers**, add a Codex instance, choose **Configure manually**,
 and complete the wizard. Then select that instance from the thread's model

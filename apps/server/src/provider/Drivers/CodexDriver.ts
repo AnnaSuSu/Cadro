@@ -18,7 +18,7 @@ import { makeCodexTextGeneration } from "../../textGeneration/CodexTextGeneratio
 import * as ProviderLatestVersions from "@cadro/provider-core/server/ProviderLatestVersions";
 import * as ProviderHost from "@cadro/provider-core/server/ProviderHost";
 import * as ServerConfig from "../../config.ts";
-import { expandHomePath } from "@cadro/provider-core/server/pathExpansion";
+import { resolveCodexBinaryPath } from "../codexBinaryPath.ts";
 import * as ProviderEventLoggers from "@cadro/provider-core/server/ProviderEventLoggers";
 import {
   createCodexAdapterV2,
@@ -219,7 +219,7 @@ export const CodexDriver: ProviderDriver<
     const effectiveConfig = {
       ...config,
       enabled,
-      binaryPath: expandHomePath(config.binaryPath, yield* HostProcess.HomeDirectory),
+      binaryPath: yield* resolveCodexBinaryPath(config.binaryPath, processEnv),
       homePath: homeLayout.effectiveHomePath ?? "",
       launchArgs: codexHomeLaunchArgs(pathService, homeLayout, config.launchArgs),
     } satisfies CodexSettings;
@@ -249,7 +249,7 @@ export const CodexDriver: ProviderDriver<
         accentColor,
         environment,
         enabled,
-        config: homeConfig,
+        config: { ...homeConfig, binaryPath: effectiveConfig.binaryPath },
       },
       {
         onUsageLimits: (update) => snapshot.applyUsageLimits(update),
