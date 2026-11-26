@@ -45,7 +45,7 @@ effectIt.effect("hydrates PATH when the desktop handoff is absent", () =>
     Effect.sync(() =>
       vi
         .spyOn(NodeChildProcess, "execFileSync")
-        .mockReturnValue("__CADRO_ENV_PATH_START__\n/opt/tools/bin\n__CADRO_ENV_PATH_END__\n"),
+        .mockReturnValue("__T3CODE_ENV_PATH_START__\n/opt/tools/bin\n__T3CODE_ENV_PATH_END__\n"),
     ),
     (probe) =>
       Effect.gen(function* () {
@@ -73,7 +73,7 @@ effectIt.effect("waits longer for a login shell that times out at startup", () =
       vi.spyOn(NodeChildProcess, "execFileSync").mockImplementation((file, _args, options) => {
         // This profile takes 8 seconds while the machine is under load.
         if ((options?.timeout ?? 0) < 8_000) throw timedOut(String(file));
-        return "__CADRO_ENV_PATH_START__\n/opt/tools/bin\n__CADRO_ENV_PATH_END__\n";
+        return "__T3CODE_ENV_PATH_START__\n/opt/tools/bin\n__T3CODE_ENV_PATH_END__\n";
       }),
     ),
     () =>
@@ -124,12 +124,12 @@ effectIt.effect("keeps mise's PATH record with the login shell PATH", () =>
         .spyOn(NodeChildProcess, "execFileSync")
         .mockReturnValue(
           [
-            "__CADRO_ENV_PATH_START__",
+            "__T3CODE_ENV_PATH_START__",
             "/home/me/.local/bin:/mise/installs/claude/latest:/mise/shims",
-            "__CADRO_ENV_PATH_END__",
-            "__CADRO_ENV___MISE_DIFF_START__",
+            "__T3CODE_ENV_PATH_END__",
+            "__T3CODE_ENV___MISE_DIFF_START__",
             "mise-diff",
-            "__CADRO_ENV___MISE_DIFF_END__",
+            "__T3CODE_ENV___MISE_DIFF_END__",
           ].join("\n"),
         ),
     ),
@@ -158,15 +158,15 @@ effectIt.effect(
           .spyOn(NodeChildProcess, "execFileSync")
           .mockReturnValue(
             [
-              "__CADRO_ENV_PATH_START__",
+              "__T3CODE_ENV_PATH_START__",
               "/opt/homebrew/bin",
-              "__CADRO_ENV_PATH_END__",
-              "__CADRO_ENV_JAVA_HOME_START__",
+              "__T3CODE_ENV_PATH_END__",
+              "__T3CODE_ENV_JAVA_HOME_START__",
               "/opt/homebrew/opt/openjdk@17",
-              "__CADRO_ENV_JAVA_HOME_END__",
-              "__CADRO_ENV_CADRO_FEATURE_FLAGS_START__",
+              "__T3CODE_ENV_JAVA_HOME_END__",
+              "__T3CODE_ENV_CADRO_FEATURE_FLAGS_START__",
               "tanstack_source",
-              "__CADRO_ENV_CADRO_FEATURE_FLAGS_END__",
+              "__T3CODE_ENV_CADRO_FEATURE_FLAGS_END__",
             ].join("\n"),
           ),
       ),
