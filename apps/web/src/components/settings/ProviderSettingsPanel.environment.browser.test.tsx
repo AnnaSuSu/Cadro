@@ -260,6 +260,16 @@ describe("EnvironmentProviderSettings routing", () => {
     expect(state.updateSettings).not.toHaveBeenCalled();
   });
 
+  it("shows the example for a second Codex login without configuring a shadow home", async () => {
+    await setup();
+    await setProviders([provider()]);
+    await using _screen = await render(panel({ targetInstanceId: codexId }));
+    const field = page.getByPlaceholder("~/.codex_personal");
+    await expect.element(field).toBeVisible();
+    await expect.element(field).toHaveValue("");
+    expect(state.mutateProviderInstance).not.toHaveBeenCalled();
+  });
+
   it("updates one provider instance without sending a stale whole map", async () => {
     await setup();
     state.settings = {
