@@ -1328,7 +1328,7 @@ const layerDeferredListing = McpServer.visibility(
       const scope = yield* Effect.serviceOption(McpInvocationContext.McpInvocationContext);
       const providerSessionId = Option.getOrUndefined(scope)?.thread?.providerSessionId;
       if (
-        (headers["cadro-tool-exposure"] ?? headers[MCP_TOOL_EXPOSURE_HEADER]) !== "deferred" ||
+        (headers[MCP_TOOL_EXPOSURE_HEADER] ?? headers["t3-tool-exposure"]) !== "deferred" ||
         providerSessionId === undefined
       ) {
         return target !== McpToolExposure.TOOL_SEARCH;
