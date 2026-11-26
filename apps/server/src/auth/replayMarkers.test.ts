@@ -52,14 +52,14 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("replayMarkers", 
           .pipe(Effect.andThen(setAge(`${name}.bin`, age)));
 
       const justExpired = Duration.sum(REPLAY_MARKER_MAX_AGE, Duration.seconds(1));
-      const expiredMarkers = [
-        "dpop-proof-old",
+      yield* writeAged("dpop-proof-old", justExpired);
+      const legacyMarkers = [
         "cloud-mint-jti-old",
         "cloud-mint-nonce-old",
         "cloud-health-jti-old",
         "cloud-health-nonce-old",
       ];
-      for (const name of expiredMarkers) yield* writeAged(name, justExpired);
+      for (const name of legacyMarkers) yield* writeAged(name, justExpired);
       yield* writeAged("dpop-proof-at-max-age", REPLAY_MARKER_MAX_AGE);
       for (const name of REAL_SECRET_NAMES) yield* writeAged(name, Duration.days(30));
       const pendingSetFile = "dpop-proof-pending.bin.0000.tmp";
@@ -73,7 +73,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("replayMarkers", 
       assert.deepStrictEqual(
         remaining.toSorted(),
         [
-          ...REAL_SECRET_NAMES.map((name) => `${name}.bin`),
+          ...[...REAL_SECRET_NAMES, ...legacyMarkers].map((name) => `${name}.bin`),
           "dpop-proof-at-max-age.bin",
           pendingSetFile,
         ].toSorted(),
