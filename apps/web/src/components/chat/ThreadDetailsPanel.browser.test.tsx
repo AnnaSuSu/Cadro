@@ -1,4 +1,5 @@
 import {
+  CADRO_PROJECT_FILE_NAME,
   EnvironmentId,
   ProjectId,
   ThreadId,
@@ -18,8 +19,8 @@ const state = vi.hoisted(() => ({
   configLoaded: true,
 }));
 
-// The read of t3.json is a cache: a re-read is the only way to see what is on disk now.
-const t3File = vi.hoisted(() => ({
+// The read of cadro.json is a cache: a re-read is the only way to see what is on disk now.
+const projectFile = vi.hoisted(() => ({
   disk: "",
   cached: "",
   listeners: new Set<() => void>(),
@@ -33,17 +34,17 @@ vi.mock(import("~/components/files/projectFilesQueryState"), async (importOrigin
     useProjectFileQuery: ((_environmentId: unknown, _cwd: string, relativePath: string | null) => {
       const contents = useSyncExternalStore(
         (listener) => {
-          t3File.listeners.add(listener);
-          return () => t3File.listeners.delete(listener);
+          projectFile.listeners.add(listener);
+          return () => projectFile.listeners.delete(listener);
         },
-        () => t3File.cached,
+        () => projectFile.cached,
       );
       const refresh = () => {
-        t3File.cached = t3File.disk;
-        for (const listener of t3File.listeners) listener();
+        projectFile.cached = projectFile.disk;
+        for (const listener of projectFile.listeners) listener();
       };
       const data =
-        relativePath === "t3.json" && contents !== ""
+        relativePath === CADRO_PROJECT_FILE_NAME && contents !== ""
           ? { relativePath, contents, byteLength: contents.length, truncated: false }
           : null;
       return {
@@ -295,12 +296,12 @@ it("offers no Initialize Git before the server config says where No project live
     .not.toBeInTheDocument();
 });
 
-it("lists the t3.json actions on disk when the actions menu opens again after the file changed", async () => {
+it("lists the cadro.json actions on disk when the actions menu opens again after the file changed", async () => {
   using fixture = setup({ workspaceRoot: "/work/plain", folder: "/work/plain" });
-  const t3Json = (name: string) =>
+  const projectJson = (name: string) =>
     JSON.stringify({ scripts: [{ name, command: `npm run dev -- --port ${name.slice(-4)}` }] });
-  t3File.disk = t3Json("Dev 4100");
-  t3File.cached = t3File.disk;
+  projectFile.disk = projectJson("Dev 4100");
+  projectFile.cached = projectFile.disk;
   await using _screen = await render(<Panel fixture={fixture} withScripts />);
 
   const chooser = page.getByRole("button", { name: "Choose project action" });
@@ -309,8 +310,8 @@ it("lists the t3.json actions on disk when the actions menu opens again after th
   await chooser.click();
   await expect.element(page.getByRole("menu")).not.toBeInTheDocument();
 
-  // A setup hook rewrites this checkout's t3.json outside Cadro.
-  t3File.disk = t3Json("Dev 4200");
+  // A setup hook rewrites this checkout's cadro.json outside Cadro.
+  projectFile.disk = projectJson("Dev 4200");
 
   await chooser.click();
   await expect.element(page.getByRole("menuitem", { name: /Dev 4200/ })).toBeVisible();

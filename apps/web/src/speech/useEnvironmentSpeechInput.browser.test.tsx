@@ -66,7 +66,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../components/sidebar/mainAppLocation", () => ({
-  useCloseAppModal: () => () => Promise.resolve(),
+  useReturnFromWorkspaceSubpage: () => () => Promise.resolve(),
 }));
 vi.mock("../state/session", () => ({
   useEnvironmentScope: (id: string) => mocks.canDictate.has(id),

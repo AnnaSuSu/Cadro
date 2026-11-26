@@ -67,17 +67,17 @@ describe("chat file links an agent shortened", () => {
   ];
 
   it("searches for package-relative paths and repeated prefixes, not exact ones", () => {
-    expect(workspaceLinkLookupQuery("cloud/http.ts", cwd)).toBe("cloud/http.ts");
+    expect(workspaceLinkLookupQuery("auth/http.ts", cwd)).toBe("auth/http.ts");
     expect(workspaceLinkLookupQuery("acme/packages/web/src/index.ts", cwd)).toBe(
       "packages/web/src/index.ts",
     );
-    expect(workspaceLinkLookupQuery("./cloud/http.ts", cwd)).toBeNull();
+    expect(workspaceLinkLookupQuery("./auth/http.ts", cwd)).toBeNull();
     expect(workspaceLinkLookupQuery("~/acme/src/config.ts", cwd)).toBeNull();
     expect(workspaceLinkLookupQuery("packages/server/", cwd)).toBeNull();
   });
 
   it("opens the one file a package-relative path is the suffix of", () => {
-    expect(pickWorkspaceLinkMatch("cloud/http.ts", cwd, entries)).toBe(
+    expect(pickWorkspaceLinkMatch("auth/http.ts", cwd, entries)).toBe(
       "packages/server/src/auth/http.ts",
     );
     expect(pickWorkspaceLinkMatch("acme/packages/web/src/index.ts", cwd, entries)).toBe(
@@ -87,7 +87,7 @@ describe("chat file links an agent shortened", () => {
 
   it("opens nothing when the suffix names several files or splits a segment", () => {
     expect(pickWorkspaceLinkMatch("src/index.ts", cwd, entries)).toBeNull();
-    expect(pickWorkspaceLinkMatch("ud/http.ts", cwd, entries)).toBeNull();
+    expect(pickWorkspaceLinkMatch("th/http.ts", cwd, entries)).toBeNull();
   });
 });
 
