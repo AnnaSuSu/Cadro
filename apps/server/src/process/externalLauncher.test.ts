@@ -66,6 +66,7 @@ const layerTest = (input: {
   readonly onUnref?: () => void;
   readonly spawnResult?: (command: ChildProcess.StandardCommand) => MockSpawnResult | undefined;
   readonly existingPaths?: ReadonlyArray<string>;
+  readonly fixtureRoot?: string;
 }) => {
   const layerSpawner = Layer.succeed(
     ChildProcessSpawner.ChildProcessSpawner,
@@ -98,6 +99,12 @@ const layerTest = (input: {
             FileSystem.FileSystem,
             Effect.map(FileSystem.FileSystem, (fileSystem) => ({
               ...fileSystem,
+              stat: (file: string) =>
+                fileSystem.stat(
+                  input.fixtureRoot && !file.startsWith(input.fixtureRoot + "/")
+                    ? input.fixtureRoot + "/missing"
+                    : file,
+                ),
               exists: (path: string) =>
                 input.existingPaths?.includes(path)
                   ? Effect.succeed(true)
@@ -1262,6 +1269,7 @@ it.effect("keeps the macOS VS Code Insiders bundle out of stable VS Code", () =>
     }).pipe(
       Effect.provide(
         layerTest({
+          fixtureRoot: home,
           platform: "darwin",
           env: { HOME: home, PATH: path.join(home, "empty") },
           onSpawn: (command) => {
@@ -1355,6 +1363,7 @@ for (const { platform, installPath, onPath } of [
         }).pipe(
           Effect.provide(
             layerTest({
+              fixtureRoot: home,
               platform,
               env: {
                 HOME: home,

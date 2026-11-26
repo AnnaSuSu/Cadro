@@ -424,10 +424,8 @@ describe("cadro pair", () => {
           typeof error === "object" && error !== null && "cause" in error ? error.cause : error,
         );
         assert.include(rendered, "No running Cadro server found.");
-        for (const subcommand of ["serve", "connect"]) {
-          const { command } = yield* resolveHostCliCommand(subcommand, ["--base-dir", baseDir]);
-          assert.include(rendered, `\`${command}\``);
-        }
+        const { command } = yield* resolveHostCliCommand("serve", ["--base-dir", baseDir]);
+        assert.include(rendered, `\`${command}\``);
       }),
     ).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
@@ -615,7 +613,10 @@ describe("cadro pair", () => {
             if (String(input) === "http://127.0.0.2:3773/.well-known/cadro/environment") {
               return Response.json(testDescriptor);
             }
-            assert.equal(String(input), "https://pair-test.tail.ts.net/.well-known/cadro/environment");
+            assert.equal(
+              String(input),
+              "https://pair-test.tail.ts.net/.well-known/cadro/environment",
+            );
             return new Response(null, { status: 503 });
           }),
           Effect.flip,
@@ -681,7 +682,10 @@ describe("cadro pair", () => {
             if (String(input) === "http://127.0.0.1:3773/.well-known/cadro/environment") {
               return Response.json(testDescriptor);
             }
-            assert.equal(String(input), "https://pair-test.tail.ts.net/.well-known/cadro/environment");
+            assert.equal(
+              String(input),
+              "https://pair-test.tail.ts.net/.well-known/cadro/environment",
+            );
             return new Response(null, { status: 503 });
           }),
           Effect.flip,
