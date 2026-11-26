@@ -201,6 +201,10 @@ active work, pending requests, or background tasks. A thread that works in the p
 directory rewinds the conversation only. The selected prompt and its attachments return to the composer for editing and
 resending. Any unsent draft stays above the restored prompt.
 
+If a message was stopped before the agent started and has no rewind point,
+choose **Edit as a new message** beneath it. This adds the text and attachments
+to the composer. The interrupted message stays in the conversation.
+
 This removes the selected message and later conversation from the active thread
 and provider history. It does not undo external actions or separate provider
 memory. The action is available only when the provider supports rewind.

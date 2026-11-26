@@ -1,4 +1,7 @@
 {
+  "839a48b39c1931fd": "Redigera som nytt meddelande",
+  "dadb9751b5a52e49": "Vänta tills bilagorna är klara innan du återställer det här meddelandet.",
+  "b75bb2318972bd98": "Gör plats för meddelandets bilagor i skrivfältet.",
   "d3a125fd336fedf3": "Typsnitt för innehåll",
   "e3d290ea818274f9": "Grundstorlek för gränssnittet och chattmeddelanden.",
   "16211504127864bf": "Återställ typsnittet för innehåll",
@@ -4194,7 +4197,6 @@
       "v": "v"
     }
   ],
-  "31c5a7eb89641aba": "Redigera härifrån",
   "918cd5477d0c0e9b": "Visa hela meddelandet",
   "513b0929ca7dde1b": "Verktygsindata\n{input}",
   "c6e000ea79ae6a2b": "{status, select, inProgress {Läser tråden ”{title}”} completed {Läste tråden ”{title}”} failed {Kunde inte läsa tråden ”{title}”} declined {Avböjde att läsa tråden ”{title}”} stopped {Slutade läsa tråden ”{title}”} other {Läser tråden ”{title}”}}",
@@ -4489,11 +4491,8 @@
   "dbba8f04cf03156e": "Det gick inte att skicka meddelandet.",
   "9cdf086fb271934e": "Tillåt nytt försök",
   "7031b06fd2df3b6c": "Den tidigare begäran kan redan köras. Kontrollera dess tråd först. Tillåta en ny sändning som kan skapa en dubblettråd?",
-  "d226ee7c6afacac0": "Vänta tills bilagorna är förberedda innan du spolar tillbaka.",
-  "164ccef2f6f8f0e0": "Gör plats för meddelandets bilagor i inmatningsfältet innan du spolar tillbaka.",
   "a1a6c1ef08a738c3": "Vissa repon spolades inte tillbaka",
   "a2bc145cd8bf6c29": "{count, plural, one {{repositories} hade ingen ögonblicksbild från före de här omgångarna och behåller därför ändringarna. Kontrollera de ej committade ändringarna där.} other {{repositories} hade inga ögonblicksbilder från före de här omgångarna och behåller därför ändringarna. Kontrollera de ej committade ändringarna där.}}",
-  "52d1d17102318779": "Det gick inte att återställa trådens tillstånd.",
   "08160f331ed1531c": "Leverantören för {model} är inte tillgänglig.",
   "59362fd6489ab5f9": "Bilagan ''{name}'' kunde inte laddas upp.",
   "830b6f7255a7ca18": "Den här servern stöder inte filbilagor.",

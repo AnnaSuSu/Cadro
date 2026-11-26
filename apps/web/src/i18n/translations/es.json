@@ -1,4 +1,7 @@
 {
+  "839a48b39c1931fd": "Editar como mensaje nuevo",
+  "dadb9751b5a52e49": "Espera a que se preparen los archivos adjuntos antes de restaurar este mensaje.",
+  "b75bb2318972bd98": "Haz espacio en el cuadro de redacción para los archivos adjuntos de este mensaje.",
   "d3a125fd336fedf3": "Fuente del contenido",
   "e3d290ea818274f9": "Tamaño base de la interfaz y los mensajes de chat.",
   "16211504127864bf": "Restablecer la fuente del contenido",
@@ -4193,7 +4196,6 @@
       "v": "v"
     }
   ],
-  "31c5a7eb89641aba": "Editar desde aquí",
   "918cd5477d0c0e9b": "Mostrar el mensaje completo",
   "513b0929ca7dde1b": "Entrada de la herramienta\n{input}",
   "c6e000ea79ae6a2b": "{status, select, inProgress {Leyendo el hilo “{title}”} completed {Leyó el hilo “{title}”} failed {No se pudo leer el hilo “{title}”} declined {Se rechazó leer el hilo “{title}”} stopped {Se dejó de leer el hilo “{title}”} other {Leyendo el hilo “{title}”}}",
@@ -4488,11 +4490,8 @@
   "dbba8f04cf03156e": "No se pudo enviar el mensaje.",
   "9cdf086fb271934e": "Permitir reintento",
   "7031b06fd2df3b6c": "Puede que la solicitud anterior ya se esté ejecutando. Revisa primero su hilo. ¿Permitir otro envío que podría crear un hilo duplicado?",
-  "d226ee7c6afacac0": "Espera a que terminen de prepararse los adjuntos antes de volver atrás.",
-  "164ccef2f6f8f0e0": "Haz sitio en el cuadro de mensaje para los adjuntos de este mensaje antes de volver atrás.",
   "a1a6c1ef08a738c3": "Algunos repositorios no se revirtieron",
   "a2bc145cd8bf6c29": "{count, plural, one {{repositories} no tenía ninguna instantánea anterior a estos turnos, así que conserva los cambios. Revisa allí los cambios sin commit.} other {{repositories} no tenían ninguna instantánea anterior a estos turnos, así que conservan los cambios. Revisa allí los cambios sin commit.}}",
-  "52d1d17102318779": "No se pudo revertir el estado del hilo.",
   "08160f331ed1531c": "El proveedor de {model} no está disponible.",
   "59362fd6489ab5f9": "No se pudo subir el adjunto ''{name}''.",
   "830b6f7255a7ca18": "Este servidor no admite archivos adjuntos.",

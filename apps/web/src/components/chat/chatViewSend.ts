@@ -160,43 +160,30 @@ export async function startFanoutThread(input: {
   }
 }
 
-/**
- * Reverts the thread to before `message` and puts that message's text, mentions
- * and attachments back in the composer draft. Returns the restored prompt, or the
- * error to show; on error the draft is untouched.
- */
-export async function rewindToMessage(input: {
+interface RestoreSentMessageInput {
   readonly message: ChatMessage;
   readonly environmentId: EnvironmentId;
-  readonly routeThreadRef: ScopedThreadRef;
-  readonly threadId: ThreadId;
-  readonly turnCount: number;
-  readonly restoreFiles: boolean;
-  readonly checkpoint: ReturnType<typeof findRevertCheckpoint>;
   readonly draftTarget: ScopedThreadRef | DraftId;
   readonly composerHasPendingAttachments: boolean;
   readonly createAssetUrl: Parameters<
     typeof prepareRevertedMessageAttachments
   >[0]["createAssetUrl"];
-  readonly revertThreadCheckpoint: (value: {
-    environmentId: EnvironmentId;
-    input: {
-      commandId: CommandId;
-      threadId: ThreadId;
-      turnCount: number;
-      restoreFiles: boolean;
-      checkpointId?: string;
-      scopeId?: string;
-    };
-  }) => Promise<AtomCommandResult<unknown, unknown>>;
-}): Promise<
+}
+
+/** Restore the prompt and its attachments alongside the draft already in the composer. */
+export async function restoreSentMessageToDraft(
+  input: RestoreSentMessageInput,
+  beforeRestore?: () => Promise<void>,
+): Promise<
   | { readonly error: string; readonly prompt?: never }
   | { readonly error: null; readonly prompt: string }
 > {
   const { message, environmentId, draftTarget } = input;
   try {
     if (input.composerHasPendingAttachments) {
-      throw new Error(m(msg("Wait for attachments to finish preparing before rewinding.")));
+      throw new Error(
+        m(msg("Wait for attachments to finish preparing before restoring this message.")),
+      );
     }
     const connection = readPreparedConnection(environmentId);
     if (!connection) throw new Error(m(msg("The environment is not connected.")));
@@ -212,43 +199,9 @@ export async function rewindToMessage(input: {
       (draft?.images.length ?? 0) + (draft?.files.length ?? 0) + files.length >
       PROVIDER_SEND_TURN_MAX_ATTACHMENTS
     ) {
-      throw new Error(
-        m(msg("Make room for this message's attachments in the composer before rewinding.")),
-      );
+      throw new Error(m(msg("Make room for this message's attachments in the composer.")));
     }
-    const commandId = CommandId.make(randomUUID());
-    const unrestored = await waitForRevertedMessage(
-      input.routeThreadRef,
-      input.turnCount,
-      commandId,
-      async () => {
-        const result = await input.revertThreadCheckpoint({
-          environmentId,
-          input: {
-            commandId,
-            threadId: input.threadId,
-            turnCount: input.turnCount,
-            restoreFiles: input.restoreFiles,
-            ...(input.checkpoint === undefined
-              ? {}
-              : { checkpointId: input.checkpoint.id, scopeId: input.checkpoint.scopeId }),
-          },
-        });
-        if (result._tag === "Failure") throw squashAtomCommandFailure(result);
-      },
-    );
-    if (unrestored.length > 0) {
-      toastManager.add({
-        type: "warning",
-        title: m(msg("Some repositories were not rewound")),
-        description: m(
-          msg(
-            "{count, plural, one {{repositories} had no snapshot from before these turns, so it keeps the changes. Check the uncommitted changes there.} other {{repositories} had no snapshot from before these turns, so they keep the changes. Check the uncommitted changes there.}}",
-            { repositories: unrestored.join(", "), count: unrestored.length },
-          ),
-        ),
-      });
-    }
+    await beforeRestore?.();
     const currentPrompt = store.getComposerDraft(draftTarget)?.prompt ?? "";
     const { prompt: restoredPrompt, mentions } = recallComposerMessage(message);
     const nextPrompt =
@@ -284,9 +237,68 @@ export async function rewindToMessage(input: {
     return { error: null, prompt: nextPrompt };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : m(msg("Failed to revert thread state.")),
+      error: error instanceof Error ? error.message : m(msg("Failed to restore draft")),
     };
   }
+}
+
+/** Prepare the draft before committing a rewind, so missing attachments never discard history. */
+export function rewindToMessage(
+  input: RestoreSentMessageInput & {
+    readonly routeThreadRef: ScopedThreadRef;
+    readonly threadId: ThreadId;
+    readonly turnCount: number;
+    readonly restoreFiles: boolean;
+    readonly checkpoint: ReturnType<typeof findRevertCheckpoint>;
+    readonly revertThreadCheckpoint: (value: {
+      environmentId: EnvironmentId;
+      input: {
+        commandId: CommandId;
+        threadId: ThreadId;
+        turnCount: number;
+        restoreFiles: boolean;
+        checkpointId?: string;
+        scopeId?: string;
+      };
+    }) => Promise<AtomCommandResult<unknown, unknown>>;
+  },
+) {
+  const { environmentId } = input;
+  return restoreSentMessageToDraft(input, async () => {
+    const commandId = CommandId.make(randomUUID());
+    const unrestored = await waitForRevertedMessage(
+      input.routeThreadRef,
+      input.turnCount,
+      commandId,
+      async () => {
+        const result = await input.revertThreadCheckpoint({
+          environmentId,
+          input: {
+            commandId,
+            threadId: input.threadId,
+            turnCount: input.turnCount,
+            restoreFiles: input.restoreFiles,
+            ...(input.checkpoint === undefined
+              ? {}
+              : { checkpointId: input.checkpoint.id, scopeId: input.checkpoint.scopeId }),
+          },
+        });
+        if (result._tag === "Failure") throw squashAtomCommandFailure(result);
+      },
+    );
+    if (unrestored.length > 0) {
+      toastManager.add({
+        type: "warning",
+        title: m(msg("Some repositories were not rewound")),
+        description: m(
+          msg(
+            "{count, plural, one {{repositories} had no snapshot from before these turns, so it keeps the changes. Check the uncommitted changes there.} other {{repositories} had no snapshot from before these turns, so they keep the changes. Check the uncommitted changes there.}}",
+            { repositories: unrestored.join(", "), count: unrestored.length },
+          ),
+        ),
+      });
+    }
+  });
 }
 
 function withRestored<T>(

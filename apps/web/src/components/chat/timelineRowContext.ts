@@ -67,6 +67,12 @@ export interface TimelineRowSharedState {
   runs: ReadonlyArray<HandoffTimelineRun>;
   activeThreadEnvironmentId: EnvironmentId;
   onRevertToTurnCount: (targetTurnCount: number, messageId: MessageId) => void;
+  interruptedMessageDraft?:
+    | {
+        readonly messageIds: ReadonlySet<MessageId>;
+        readonly restore: (messageId: MessageId) => void;
+      }
+    | undefined;
   onUseArtifactTemplate: (template: CodexArtifactTemplate) => void;
   onSendAppMessage: ((text: string) => Promise<void>) | undefined;
   onAppFullscreenChange: (rowId: string, fullscreen: boolean) => void;

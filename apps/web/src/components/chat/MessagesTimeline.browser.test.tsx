@@ -1586,6 +1586,35 @@ describe("MessagesTimeline automation prompts", () => {
   });
 });
 
+it("lets a prompt interrupted before provider start be edited without a rewind point", async () => {
+  setup();
+  const restore = vi.fn();
+  const rewind = vi.fn();
+  const interrupted = MessageId.make("interrupted-prompt");
+  await using screen = await renderTimeline(
+    [
+      message("Inspect the screenshot", { runId: RunId.make("interrupted") }, interrupted),
+      message("Another prompt", { runId: RunId.make("running") }, "another-prompt"),
+    ],
+    {
+      isWorking: true,
+      runningRunId: RunId.make("running"),
+      interruptedMessageDraft: { messageIds: new Set([interrupted]), restore },
+      onRevertToTurnCount: rewind,
+    },
+  );
+  const editableIds = screen
+    .buttons("Edit as a new message")
+    .map((button) => button.closest("[data-message-id]")?.getAttribute("data-message-id"));
+  expect(new Set(editableIds)).toEqual(new Set([interrupted]));
+  const edit = screen.button("Edit as a new message");
+  expect(edit).not.toHaveProperty("disabled", true);
+  await click(edit);
+  expect(restore).toHaveBeenCalledExactlyOnceWith(interrupted);
+  expect(rewind).not.toHaveBeenCalled();
+  expect(screen.text()).toContain("Inspect the screenshot");
+});
+
 const SENDER_THREAD_ID = ThreadId.make("thread-sender");
 const AGENT_MESSAGE = "Review finished\n\nThe migration drops the index before backfilling it.";
 

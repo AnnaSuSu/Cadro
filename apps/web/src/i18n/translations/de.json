@@ -1,4 +1,7 @@
 {
+  "839a48b39c1931fd": "Als neue Nachricht bearbeiten",
+  "dadb9751b5a52e49": "Warte, bis die Anhänge vorbereitet sind, bevor du diese Nachricht wiederherstellst.",
+  "b75bb2318972bd98": "Mache Platz für die Anhänge dieser Nachricht im Eingabefeld.",
   "d3a125fd336fedf3": "Inhaltsschrift",
   "e3d290ea818274f9": "Grundgröße für die Oberfläche und Chatnachrichten.",
   "16211504127864bf": "Inhaltsschrift zurücksetzen",
@@ -4196,7 +4199,6 @@
     },
     " herunterladen"
   ],
-  "31c5a7eb89641aba": "Ab hier bearbeiten",
   "918cd5477d0c0e9b": "Vollständige Nachricht anzeigen",
   "513b0929ca7dde1b": "Tool-Eingabe\n{input}",
   "c6e000ea79ae6a2b": "{status, select, inProgress {Thread „{title}“ wird gelesen} completed {Thread „{title}“ gelesen} failed {Thread „{title}“ konnte nicht gelesen werden} declined {Lesen von Thread „{title}“ abgelehnt} stopped {Lesen von Thread „{title}“ abgebrochen} other {Thread „{title}“ wird gelesen}}",
@@ -4491,11 +4493,8 @@
   "dbba8f04cf03156e": "Nachricht konnte nicht gesendet werden.",
   "9cdf086fb271934e": "Erneuten Versuch erlauben",
   "7031b06fd2df3b6c": "Die vorherige Anfrage läuft möglicherweise bereits. Prüfe zuerst ihren Thread. Ein weiteres Senden erlauben, das einen doppelten Thread erzeugen könnte?",
-  "d226ee7c6afacac0": "Warte, bis die Anhänge vorbereitet sind, bevor du zurückspulst.",
-  "164ccef2f6f8f0e0": "Schaffe im Eingabefeld Platz für die Anhänge dieser Nachricht, bevor du zurückspulst.",
   "a1a6c1ef08a738c3": "Einige Repositorys wurden nicht zurückgespult",
   "a2bc145cd8bf6c29": "{count, plural, one {{repositories} hatte keinen Snapshot von vor diesen Runden und behält daher die Änderungen. Prüfe dort die nicht committeten Änderungen.} other {{repositories} hatten keinen Snapshot von vor diesen Runden und behalten daher die Änderungen. Prüfe dort die nicht committeten Änderungen.}}",
-  "52d1d17102318779": "Thread-Zustand konnte nicht zurückgesetzt werden.",
   "08160f331ed1531c": "Der Anbieter für {model} ist nicht verfügbar.",
   "59362fd6489ab5f9": "Anhang ''{name}'' konnte nicht hochgeladen werden.",
   "830b6f7255a7ca18": "Dieser Server unterstützt keine Dateianhänge.",

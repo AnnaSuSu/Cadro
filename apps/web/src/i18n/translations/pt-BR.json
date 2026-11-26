@@ -1,4 +1,7 @@
 {
+  "839a48b39c1931fd": "Editar como nova mensagem",
+  "dadb9751b5a52e49": "Aguarde a preparação dos anexos terminar antes de restaurar esta mensagem.",
+  "b75bb2318972bd98": "Libere espaço no campo de composição para os anexos desta mensagem.",
   "d3a125fd336fedf3": "Fonte do conteúdo",
   "e3d290ea818274f9": "Tamanho base da interface e das mensagens do chat.",
   "16211504127864bf": "Restaurar a fonte padrão do conteúdo",
@@ -4193,7 +4196,6 @@
       "v": "v"
     }
   ],
-  "31c5a7eb89641aba": "Editar a partir daqui",
   "918cd5477d0c0e9b": "Mostrar mensagem completa",
   "513b0929ca7dde1b": "Entrada da ferramenta\n{input}",
   "c6e000ea79ae6a2b": "{status, select, inProgress {Lendo a thread “{title}”} completed {Leu a thread “{title}”} failed {Falha ao ler a thread “{title}”} declined {Recusou-se a ler a thread “{title}”} stopped {Parou de ler a thread “{title}”} other {Lendo a thread “{title}”}}",
@@ -4488,11 +4490,8 @@
   "dbba8f04cf03156e": "Falha ao enviar a mensagem.",
   "9cdf086fb271934e": "Permitir nova tentativa",
   "7031b06fd2df3b6c": "A solicitação anterior pode já estar em execução. Verifique a thread dela primeiro. Permitir outro envio que pode criar uma thread duplicada?",
-  "d226ee7c6afacac0": "Aguarde a preparação dos anexos antes de voltar.",
-  "164ccef2f6f8f0e0": "Abra espaço para os anexos desta mensagem no editor de mensagens antes de voltar.",
   "a1a6c1ef08a738c3": "Alguns repositórios não foram revertidos",
   "a2bc145cd8bf6c29": "{count, plural, one {{repositories} não tinha snapshot de antes destes turnos, então mantém as alterações. Verifique as alterações sem commit lá.} other {{repositories} não tinham snapshot de antes destes turnos, então mantêm as alterações. Verifique as alterações sem commit lá.}}",
-  "52d1d17102318779": "Falha ao reverter o estado da thread.",
   "08160f331ed1531c": "O provedor de {model} não está disponível.",
   "59362fd6489ab5f9": "Falha ao enviar o anexo ''{name}''.",
   "830b6f7255a7ca18": "Este servidor não aceita anexos de arquivo.",

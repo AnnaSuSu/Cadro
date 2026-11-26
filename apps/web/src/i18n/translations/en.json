@@ -1,4 +1,7 @@
 {
+  "839a48b39c1931fd": "Edit as a new message",
+  "dadb9751b5a52e49": "Wait for attachments to finish preparing before restoring this message.",
+  "b75bb2318972bd98": "Make room for this message's attachments in the composer.",
   "d3a125fd336fedf3": "Content font",
   "e3d290ea818274f9": "Base size for the interface and chat messages.",
   "16211504127864bf": "Reset content font to default",
@@ -4195,7 +4198,6 @@
       "v": "v"
     }
   ],
-  "31c5a7eb89641aba": "Edit from here",
   "918cd5477d0c0e9b": "Show full message",
   "513b0929ca7dde1b": "Tool input\n{input}",
   "c6e000ea79ae6a2b": "{status, select, inProgress {Reading thread “{title}”} completed {Read thread “{title}”} failed {Failed to read thread “{title}”} declined {Declined to read thread “{title}”} stopped {Stopped reading thread “{title}”} other {Reading thread “{title}”}}",
@@ -4490,11 +4492,8 @@
   "dbba8f04cf03156e": "Failed to send message.",
   "9cdf086fb271934e": "Allow retry",
   "7031b06fd2df3b6c": "The previous request may already be running. Check its thread first. Allow another send that could create a duplicate thread?",
-  "d226ee7c6afacac0": "Wait for attachments to finish preparing before rewinding.",
-  "164ccef2f6f8f0e0": "Make room for this message's attachments in the composer before rewinding.",
   "a1a6c1ef08a738c3": "Some repositories were not rewound",
   "a2bc145cd8bf6c29": "{count, plural, one {{repositories} had no snapshot from before these turns, so it keeps the changes. Check the uncommitted changes there.} other {{repositories} had no snapshot from before these turns, so they keep the changes. Check the uncommitted changes there.}}",
-  "52d1d17102318779": "Failed to revert thread state.",
   "08160f331ed1531c": "Provider for {model} is unavailable.",
   "59362fd6489ab5f9": "Attachment ''{name}'' failed to upload.",
   "830b6f7255a7ca18": "This server does not support file attachments.",

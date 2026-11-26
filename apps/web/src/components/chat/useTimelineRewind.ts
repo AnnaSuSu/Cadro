@@ -16,6 +16,7 @@ import {
 } from "@cadro/contracts";
 import { scopeThreadRef } from "@cadro/client-runtime/environment";
 import { useNavigate } from "@tanstack/react-router";
+import { useRef } from "react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -34,7 +35,7 @@ import { readEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
 import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
-import { rewindToMessage } from "./chatViewSend";
+import { restoreSentMessageToDraft, rewindToMessage } from "./chatViewSend";
 import { makeThreadErrorSetter } from "../ChatView.logic";
 interface TimelineRewindInput {
   readonly environmentId: EnvironmentId;
@@ -91,6 +92,56 @@ export function useTimelineRewind(input: TimelineRewindInput) {
   });
   const forkThreadFromRun = useAtomCommand(threadEnvironment.forkFromRun, {
     reportFailure: false,
+  });
+  const restoringMessageRef = useRef(false);
+  const unstartedInterruptedMessageIds = new Set(
+    serverProjection?.runs
+      .filter((run) => run.status === "interrupted" && run.startedAt === null)
+      .map((run) => run.userMessageId),
+  );
+
+  const focusRestoredPrompt = (prompt: string) => {
+    if (currentRouteThreadKeyRef.current !== routeThreadKey) return;
+    promptRef.current = prompt;
+    composerRef.current?.resetCursorState({ prompt, cursor: prompt.length });
+    requestAnimationFrame(() => {
+      if (currentRouteThreadKeyRef.current === routeThreadKey) composerRef.current?.focusAtEnd();
+    });
+  };
+
+  const restoreInterruptedMessage = useStableCallback(async (messageId: MessageId) => {
+    if (
+      !activeThread ||
+      activeEnvironmentUnavailable ||
+      isSendBusy ||
+      isRevertingCheckpoint ||
+      restoringMessageRef.current ||
+      !unstartedInterruptedMessageIds.has(messageId) ||
+      !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope)
+    ) {
+      return;
+    }
+    const message = timelineMessages.find((candidate) => candidate.id === messageId);
+    if (message?.role !== "user") return;
+
+    restoringMessageRef.current = true;
+    try {
+      setThreadError(activeThread.id, null);
+      const restored = await restoreSentMessageToDraft({
+        message,
+        environmentId,
+        draftTarget: composerDraftTarget,
+        composerHasPendingAttachments: composerRef.current?.hasPendingAttachments() === true,
+        createAssetUrl: createAttachmentAssetUrl,
+      });
+      if (restored.error !== null) {
+        setThreadError(activeThread.id, restored.error);
+        return;
+      }
+      focusRestoredPrompt(restored.prompt);
+    } finally {
+      restoringMessageRef.current = false;
+    }
   });
 
   const onRevertToTurnCount = async (
@@ -170,14 +221,7 @@ export function useTimelineRewind(input: TimelineRewindInput) {
       setThreadError(activeThread.id, rewind.error);
       return;
     }
-    if (currentRouteThreadKeyRef.current === routeThreadKey) {
-      const nextPrompt = rewind.prompt;
-      promptRef.current = nextPrompt;
-      composerRef.current?.resetCursorState({ prompt: nextPrompt, cursor: nextPrompt.length });
-      requestAnimationFrame(() => {
-        if (currentRouteThreadKeyRef.current === routeThreadKey) composerRef.current?.focusAtEnd();
-      });
-    }
+    focusRestoredPrompt(rewind.prompt);
   };
   const onRevertToTurnCountStable = useStableCallback(onRevertToTurnCount);
   const onConfirmRevert = (turnCount: number, messageId: MessageId, restoreFiles: boolean) => {
@@ -237,5 +281,7 @@ export function useTimelineRewind(input: TimelineRewindInput) {
     onConfirmRevertStable,
     onForkFromRunStable,
     onRevertTimelineTurnStable,
+    unstartedInterruptedMessageIds,
+    restoreInterruptedMessage,
   };
 }

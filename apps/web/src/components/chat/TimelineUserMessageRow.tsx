@@ -371,7 +371,7 @@ function AutomationMessageRow({ row }: { row: Extract<TimelineRow, { kind: "mess
             />
             <div className="flex items-center gap-0.5">
               {typeof revertTurnCount === "number" && (
-                <RevertUserMessageButton turnCount={revertTurnCount} messageId={row.message.id} />
+                <EditUserMessageButton turnCount={revertTurnCount} messageId={row.message.id} />
               )}
               <MessageCopyButton text={text} variant="ghost" />
               {promptLink !== null && (
@@ -510,6 +510,10 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
   const resolvedContext = resolveUserMessageContext({ ...row.message, text: userMessage.text });
   const previewImages = userImages.filter((image) => image.name.startsWith("preview-annotation-"));
   const revertTurnCount = row.revertTurnCount;
+  const canRestoreInterruptedMessage =
+    userMessage.attribution === null &&
+    row.projectedItem?.visibility !== "inherited" &&
+    ctx.interruptedMessageDraft?.messageIds.has(row.message.id) === true;
   const attachmentReferences = collectComposerContextReferences(resolvedContext.text).flatMap(
     (occurrence) => {
       const record = asKnownContextRecord(resolvedContext.recordsById.get(occurrence.contextId));
@@ -873,8 +877,8 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
         </TooltipPopup>
       </Tooltip>
       <div className={cn("flex items-center gap-0.5", floatActions && "flex-wrap justify-end")}>
-        {typeof revertTurnCount === "number" && (
-          <RevertUserMessageButton turnCount={revertTurnCount} messageId={row.message.id} />
+        {(typeof revertTurnCount === "number" || canRestoreInterruptedMessage) && (
+          <EditUserMessageButton turnCount={revertTurnCount} messageId={row.message.id} />
         )}
         {copyText && (
           <MessageCopyButton
@@ -1174,16 +1178,17 @@ function UserMessageIntentMarker({
   );
 }
 
-function RevertUserMessageButton({
+function EditUserMessageButton({
   turnCount,
   messageId,
 }: {
-  turnCount: number;
+  turnCount?: number | undefined;
   messageId: MessageId;
 }) {
   const ctx = use(TimelineRowCtx);
   const activity = use(TimelineRowActivityCtx);
   const gt = useGT();
+  const label = turnCount === undefined ? gt("Edit as a new message") : gt("Edit from here");
 
   return (
     <Tooltip>
@@ -1193,17 +1198,20 @@ function RevertUserMessageButton({
             type="button"
             size="xs"
             variant="ghost"
-            disabled={activity.isRevertingCheckpoint || activity.isWorking}
-            onClick={() => ctx.onRevertToTurnCount(turnCount, messageId)}
-            aria-label={gt("Edit from here")}
+            disabled={
+              activity.isRevertingCheckpoint || (turnCount !== undefined && activity.isWorking)
+            }
+            onClick={() => {
+              if (turnCount === undefined) ctx.interruptedMessageDraft?.restore(messageId);
+              else ctx.onRevertToTurnCount(turnCount, messageId);
+            }}
+            aria-label={label}
           />
         }
       >
         <PencilIcon className="size-3" />
       </TooltipTrigger>
-      <TooltipPopup side="top">
-        <T>Edit from here</T>
-      </TooltipPopup>
+      <TooltipPopup side="top">{label}</TooltipPopup>
     </Tooltip>
   );
 }

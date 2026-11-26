@@ -1,4 +1,4 @@
-import { rewindToMessage } from "./chat/chatViewSend";
+import { restoreSentMessageToDraft, rewindToMessage } from "./chat/chatViewSend";
 import * as session from "../state/session";
 import {
   environmentContextRecord,
@@ -1643,6 +1643,43 @@ describe("deriveThreadPendingBackgroundTasks", () => {
 });
 
 describe("prepareRevertedMessageAttachments", () => {
+  it("restores an interrupted prompt and its image after the existing draft without rewinding", async () => {
+    using _connection = vi.spyOn(session, "readPreparedConnection").mockReturnValue({
+      httpBaseUrl: "http://localhost",
+    } as never);
+    using _fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(new Uint8Array([1, 2, 3])));
+    const target = DraftId.make("interrupted-prompt-draft");
+    const store = useComposerDraftStore.getState();
+    using _draft = { [Symbol.dispose]: () => store.clearComposerContent(target) };
+    store.setPrompt(target, "Unsent note");
+    const result = await restoreSentMessageToDraft({
+      message: {
+        id: MessageId.make("interrupted"),
+        role: "user",
+        text: "Inspect this image",
+        runId: RunId.make("interrupted"),
+        streaming: false,
+        createdAt: now,
+        updatedAt: now,
+        attachments: [
+          { type: "image", id: "sent", name: "image.png", mimeType: "image/png", sizeBytes: 3 },
+        ],
+      },
+      environmentId: EnvironmentId.make("interrupted-draft"),
+      draftTarget: target,
+      composerHasPendingAttachments: false,
+      createAssetUrl: async () =>
+        AsyncResult.success({ relativeUrl: "/attachment/image.png", expiresAt: 0 }),
+    });
+    expect(result).toEqual({ error: null, prompt: "Unsent note\n\nInspect this image" });
+    expect(store.getComposerDraft(target)).toMatchObject({
+      prompt: "Unsent note\n\nInspect this image",
+      images: [{ name: "image.png", sizeBytes: 3 }],
+    });
+  });
+
   it("suppresses a repeated image after restoring a rewound message", async () => {
     using _fetch = vi
       .spyOn(globalThis, "fetch")

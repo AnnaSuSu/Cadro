@@ -311,6 +311,7 @@ interface MessagesTimelineProps {
   threadStartCheckpointAvailable?: boolean;
   availableRevertTurnCounts?: ReadonlySet<number> | undefined;
   onRevertToTurnCount: (targetTurnCount: number, messageId: MessageId) => void;
+  interruptedMessageDraft?: TimelineRowSharedState["interruptedMessageDraft"];
   onUseArtifactTemplate?: (template: CodexArtifactTemplate) => void;
   onSendAppMessage?: (text: string) => Promise<void>;
   onRunShellCommand?: (command: string) => void;
@@ -414,6 +415,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   threadStartCheckpointAvailable = false,
   availableRevertTurnCounts,
   onRevertToTurnCount,
+  interruptedMessageDraft,
   onUseArtifactTemplate = NOOP_USE_ARTIFACT_TEMPLATE,
   onSendAppMessage,
   onRunShellCommand,
@@ -1146,6 +1148,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     runs,
     activeThreadEnvironmentId,
     onRevertToTurnCount,
+    interruptedMessageDraft,
     onRunShellCommand,
     findActive,
     onImageExpand,
