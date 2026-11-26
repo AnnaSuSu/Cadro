@@ -214,6 +214,7 @@ import {
   type CommandPaletteOpenIntent,
   type CommandPaletteProject,
   type CommandPaletteReturnContext,
+  type CommandPaletteSearchTab,
   type CommandPaletteSubmenuItem,
   type CommandPaletteView,
   filterCommandPaletteGroups,
@@ -236,7 +237,11 @@ import {
   type SearchOverlayMode,
 } from "./CommandPalette.logic";
 import { resolveEnvironmentOptionLabel } from "./BranchToolbar.logic";
-import { CommandPaletteContent, type PendingInputSelection } from "./CommandPaletteContent";
+import {
+  CommandPaletteContent,
+  CommandPaletteSearchTabs,
+  type PendingInputSelection,
+} from "./CommandPaletteContent";
 import {
   selectCommandPaletteClientSettings,
   useEnvironmentLookups,
@@ -361,6 +366,7 @@ export function CommandPalette({ children }: { children: ReactNode }) {
         </div>
         <CommandPaletteDialog
           mode={state.mode}
+          commandTab={state.commandTab ?? "all"}
           session={state.session}
           openIntent={state.openIntent}
           setOpen={setOpen}
@@ -374,6 +380,7 @@ export function CommandPalette({ children }: { children: ReactNode }) {
 
 function CommandPaletteDialog(props: {
   readonly mode: SearchOverlayMode;
+  readonly commandTab: CommandPaletteSearchTab;
   readonly session: number;
   readonly openIntent: CommandPaletteOpenIntent | null;
   readonly setOpen: (open: boolean) => void;
@@ -421,6 +428,7 @@ function CommandPaletteDialog(props: {
       ) : (
         <OpenCommandPaletteDialog
           key={props.session}
+          commandTab={props.commandTab}
           openIntent={props.openIntent}
           setOpen={props.setOpen}
           openChildSearch={props.openChildSearch}
@@ -432,6 +440,7 @@ function CommandPaletteDialog(props: {
 }
 
 function OpenCommandPaletteDialog(props: {
+  readonly commandTab: CommandPaletteSearchTab;
   readonly openIntent: CommandPaletteOpenIntent | null;
   readonly setOpen: (open: boolean) => void;
   readonly openChildSearch: (
@@ -1973,6 +1982,7 @@ function OpenCommandPaletteDialog(props: {
             )
           : allThreadItems,
       threadMessageItems: isLinkedThreadSearch ? [] : threadMessageItems,
+      filterTab: isLinkedThreadSearch ? "all" : props.commandTab,
       now: searchNow,
     },
     messages,
@@ -3107,12 +3117,21 @@ function OpenCommandPaletteDialog(props: {
     </span>
   ) : null;
 
+  const showSearchTabs =
+    paletteMode === "root" &&
+    !isRemoteProjectCloneFlow &&
+    newProjectFlow === null &&
+    !isLinkedThreadSearch;
+
   return (
     <CommandPaletteContent
       key={`${viewStack.length}-${browseGeneration}-${isBrowsing}-${newProjectFlow ? "new-project" : (addProjectCloneFlow?.step ?? "none")}`}
       aria-label={gt("Command palette")}
       autoHighlight={autoHighlightsFirstRow ? "always" : false}
       footerActionLabel={footerActionLabel}
+      footerLeading={
+        showSearchTabs ? <CommandPaletteSearchTabs activeTab={props.commandTab} /> : undefined
+      }
       footerTrailing={footerTrailing}
       inputAccessory={inputAccessory}
       inputProps={{
@@ -3197,7 +3216,7 @@ function OpenCommandPaletteDialog(props: {
         rows={resultRows.rows}
         listRef={resultListRef}
         highlightedItemValue={highlightedItemValue}
-        isActionsOnly={isActionsOnly}
+        isActionsOnly={isActionsOnly || (showSearchTabs && props.commandTab === "actions")}
         keybindings={keybindings}
         onExecuteItem={executeItem}
         {...(addProjectCloneFlow?.step === "repository"

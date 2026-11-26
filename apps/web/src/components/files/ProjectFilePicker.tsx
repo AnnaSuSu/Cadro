@@ -10,7 +10,7 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
-import { CommandPaletteContent } from "../CommandPaletteContent";
+import { CommandPaletteContent, CommandPaletteSearchTabs } from "../CommandPaletteContent";
 import { type CommandPaletteActionItem } from "../CommandPalette.logic";
 import { CommandPaletteResults } from "../CommandPaletteResults";
 import {
@@ -68,6 +68,7 @@ function EmptyProjectFilePicker() {
       aria-label={gt("File picker")}
       escapeLabel={gt("Back", { $context: "button, leaves the file picker" })}
       footerActionLabel={gt("Open file")}
+      footerLeading={<CommandPaletteSearchTabs activeTab="files" />}
       inputProps={{ disabled: true, placeholder: gt("Search files…") }}
       mode="none"
       testId="project-file-picker"
@@ -130,6 +131,7 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
       autoHighlight="always"
       escapeLabel={gt("Back", { $context: "button, leaves the file picker" })}
       footerActionLabel={gt("Open file")}
+      footerLeading={<CommandPaletteSearchTabs activeTab="files" />}
       inputProps={{ placeholder: gt("Search files…") }}
       mode="none"
       onItemHighlighted={(value) => {

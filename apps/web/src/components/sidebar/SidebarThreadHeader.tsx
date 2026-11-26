@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { cn } from "~/lib/utils";
+import { openCommandPalette } from "../../commandPaletteBus";
 import { Button } from "../ui/button";
 import { SidebarInput, SidebarMenuButton } from "../ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -126,7 +127,7 @@ export function SidebarThreadHeader({
           {hasProjects ? projectScope : null}
           <SidebarHeaderIconButton
             label={gt("Search threads")}
-            onClick={() => searchInputRef.current?.focus()}
+            onClick={() => openCommandPalette()}
           >
             <SearchIcon aria-hidden className="size-4 stroke-(length:--sidebar-icon-stroke)" />
           </SidebarHeaderIconButton>
@@ -149,7 +150,6 @@ export function SidebarThreadHeader({
             <span>{gt("New chat")}</span>
           </SidebarMenuButton>
         </div>
-        {searchField}
         {!isSearching ? (
           <div className="group/projects flex items-center mt-3.5 h-8 gap-0.5">
             <button

@@ -573,6 +573,120 @@ export function displayLimitWindows(pool: LimitPool) {
     .sort((left, right) => cursorUsageWindowRank(left.id) - cursorUsageWindowRank(right.id));
 }
 
+export type LimitPoolSeverity = "normal" | "warning" | "exhausted";
+
+const BOTTLENECK_KIND_ORDER: Record<LimitPoolWindow["kind"], number> = {
+  weekly: 0,
+  monthly: 1,
+  session: 2,
+  other: 3,
+};
+
+function bottleneckResetAt(window: LimitPoolWindow | null): number {
+  return window?.resets[0]?.at ?? Infinity;
+}
+
+export function selectBottleneckWindow(pool: LimitPool): LimitPoolWindow | null {
+  return bottleneckOf(displayLimitWindows(pool));
+}
+
+function bottleneckOf(windows: readonly LimitPoolWindow[]): LimitPoolWindow | null {
+  return (
+    [...windows].sort((left, right) => {
+      const difference = left.remainingPercent - right.remainingPercent;
+      if (difference !== 0) return difference;
+      if (left.remainingPercent === 0) return bottleneckResetAt(right) - bottleneckResetAt(left);
+      return BOTTLENECK_KIND_ORDER[left.kind] - BOTTLENECK_KIND_ORDER[right.kind];
+    })[0] ?? null
+  );
+}
+
+export interface SidebarLimitPoolSummary {
+  readonly pool: LimitPool;
+  readonly driver: LimitPool["driver"];
+  readonly windows: readonly LimitPoolWindow[];
+  readonly bottleneck: LimitPoolWindow | null;
+  readonly remainingPercent: number | null;
+  readonly severity: LimitPoolSeverity;
+  readonly pinned: boolean;
+}
+
+export interface SidebarUsageSummary {
+  readonly orderedPools: readonly SidebarLimitPoolSummary[];
+  readonly visibleRings: readonly SidebarLimitPoolSummary[];
+  readonly overflowCount: number;
+  readonly focused: SidebarLimitPoolSummary | null;
+}
+
+export function summarizeSidebarUsage(input: {
+  readonly pools: readonly LimitPool[];
+  readonly pinnedDriver: LimitPool["driver"] | null;
+  readonly driverOrder: readonly LimitPool["driver"][];
+  readonly maxRings?: number;
+}): SidebarUsageSummary {
+  const rank = (driver: LimitPool["driver"]) => {
+    const index = input.driverOrder.indexOf(driver);
+    return index === -1 ? input.driverOrder.length : index;
+  };
+  const orderedPools = input.pools
+    .map((pool): SidebarLimitPoolSummary => {
+      const windows = displayLimitWindows(pool);
+      const bottleneck = bottleneckOf(windows);
+      const remainingPercent = bottleneck?.remainingPercent ?? null;
+      return {
+        pool,
+        driver: pool.driver,
+        windows,
+        bottleneck,
+        remainingPercent,
+        severity:
+          remainingPercent === 0
+            ? "exhausted"
+            : remainingPercent !== null && remainingPercent <= 15
+              ? "warning"
+              : "normal",
+        pinned: pool.driver === input.pinnedDriver,
+      };
+    })
+    .sort(
+      (left, right) =>
+        Number(right.pinned) - Number(left.pinned) ||
+        rank(left.driver) - rank(right.driver) ||
+        left.driver.localeCompare(right.driver),
+    );
+
+  const pinned = orderedPools.find((pool) => pool.pinned);
+  const exhausted = orderedPools.filter((pool) => pool.severity === "exhausted");
+  const warnings = orderedPools.filter((pool) => pool.severity === "warning");
+  const focused =
+    [...exhausted].sort(
+      (left, right) =>
+        Number(right.pinned) - Number(left.pinned) ||
+        bottleneckResetAt(right.bottleneck) - bottleneckResetAt(left.bottleneck),
+    )[0] ??
+    [...warnings].sort((left, right) => left.remainingPercent! - right.remainingPercent!)[0] ??
+    pinned ??
+    (orderedPools.length === 1 ? orderedPools[0]! : null);
+
+  const priority = [
+    ...(focused ? [focused] : []),
+    ...(pinned ? [pinned] : []),
+    ...exhausted,
+    ...warnings,
+    ...orderedPools,
+  ];
+  const selected = new Set([...new Set(priority)].slice(0, Math.max(0, input.maxRings ?? 3)));
+  const visibleRings = orderedPools.filter((pool) => selected.has(pool) && pool !== focused);
+  if (focused && selected.has(focused)) visibleRings.push(focused);
+
+  return {
+    orderedPools,
+    visibleRings,
+    overflowCount: orderedPools.length - visibleRings.length,
+    focused,
+  };
+}
+
 const WINDOW_KIND_ORDER: Record<ServerProviderUsageWindow["kind"], number> = {
   session: 0,
   weekly: 1,
@@ -697,6 +811,26 @@ function compensatedSum(values: readonly number[]): number {
   return sum + correction;
 }
 
+function poolMemberWeights(members: readonly LimitPoolMember[], kind: LimitPoolWindow["kind"]) {
+  const capacities = members.map((member) => planCapacity(member.account, kind));
+  // One unknown plan makes the pool incomparable by plan, so every member then counts once.
+  return capacities.every((capacity) => capacity !== undefined) ? capacities : members.map(() => 1);
+}
+
+export function poolWindowTimeLeftPercent(window: LimitPoolWindow, now: number): number | null {
+  const weights = poolMemberWeights(window.members, window.kind);
+  let weightedElapsed = 0;
+  let totalWeight = 0;
+  for (const [index, member] of window.members.entries()) {
+    const elapsed = elapsedShare(member.window, now);
+    if (elapsed === null) continue;
+    const weight = weights[index]!;
+    weightedElapsed += elapsed * weight;
+    totalWeight += weight;
+  }
+  return totalWeight === 0 ? null : Math.round((1 - weightedElapsed / totalWeight) * 100);
+}
+
 function poolWindows(accounts: readonly LimitAccount[], now: number): readonly LimitPoolWindow[] {
   const byKey = new Map<string, LimitPoolMember[]>();
   for (const account of accounts) {
@@ -716,11 +850,7 @@ function poolWindows(accounts: readonly LimitAccount[], now: number): readonly L
     const memberByAccount = new Map(members.map((member) => [member.account.key, member]));
     const first = members[0]!.window;
     const id = members[0]!.account.driver === "codex" ? key : first.id;
-    // One unknown plan makes the pool incomparable by plan, so every member then counts once.
-    const capacities = members.map((m) => planCapacity(m.account, first.kind));
-    const weights = capacities.every((capacity) => capacity !== undefined)
-      ? capacities
-      : members.map(() => 1);
+    const weights = poolMemberWeights(members, first.kind);
     const weightOf = new Map(members.map((m, index) => [m, weights[index]!]));
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     // Sum in value order so reset order cannot change the rounded result.

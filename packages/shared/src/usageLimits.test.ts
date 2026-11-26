@@ -11,6 +11,11 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   type LimitAccount,
+  type LimitPool,
+  type LimitPoolWindow,
+  poolWindowTimeLeftPercent,
+  selectBottleneckWindow,
+  summarizeSidebarUsage,
   displayLimitWindows,
   cursorUsageWindowDetails,
   collectProviderUsageLimits,
@@ -1178,6 +1183,19 @@ describe("pools", () => {
   });
 });
 
+const account = (key: string, windows: LimitAccount["limits"]["windows"]): LimitAccount => ({
+  key,
+  driver: ProviderDriverKind.make("claudeAgent"),
+  displayName: key,
+  email: undefined,
+  plan: undefined,
+  accentColor: undefined,
+  environments: [],
+  sourceLabel: "Hub",
+  redeem: null,
+  limits: { checkedAt: "2026-09-03T11:00:00.000Z", windows },
+});
+
 describe("pooled account columns", () => {
   const weekly = {
     ...window,
@@ -1186,18 +1204,22 @@ describe("pooled account columns", () => {
     label: "Weekly",
     windowDurationMins: 7 * 24 * 60,
   } as const;
-  const account = (key: string, windows: LimitAccount["limits"]["windows"]): LimitAccount => ({
-    key,
-    driver: ProviderDriverKind.make("claudeAgent"),
-    displayName: key,
-    email: undefined,
-    plan: undefined,
-    accentColor: undefined,
-    environments: [],
-    sourceLabel: "Hub",
-    redeem: null,
-    limits: { checkedAt: "2026-09-03T11:00:00.000Z", windows },
+  it("weighs timed members by plan and ignores members without clocks", () => {
+    const pro = { ...account("pro", [window]), plan: "Pro" };
+    const max = {
+      ...account("max", [{ ...window, resetsAt: "2026-09-03T16:00:00.000Z" }]),
+      plan: "Max",
+    };
+    const untimed = account("untimed", [
+      { id: window.id, label: window.label, kind: window.kind, usedPercent: 40 },
+    ]);
+    const pooled = (accounts: readonly LimitAccount[]) =>
+      collectLimitPools(accounts, now)[0]!.windows[0]!;
+    expect(poolWindowTimeLeftPercent(pooled([pro, max]), now)).toBe(73);
+    expect(poolWindowTimeLeftPercent(pooled([pro, max, untimed]), now)).toBe(60);
+    expect(poolWindowTimeLeftPercent(pooled([untimed]), now)).toBeNull();
   });
+
   const keys = (pool: ReturnType<typeof collectLimitPools>[number]) =>
     pool.windows.map((row) =>
       row.columns.map((member) => (member.window ? member.account.key : null)),
@@ -2035,5 +2057,135 @@ describe("ChatGPT sharing presentation", () => {
         auth: { status: "unauthenticated", subscriptionSharing: true },
       }),
     ).toBe(false);
+  });
+});
+
+describe("sidebar usage", () => {
+  const quota = (
+    kind: LimitPoolWindow["kind"],
+    remainingPercent: number,
+    reset?: number,
+  ): LimitPoolWindow => ({
+    id: kind,
+    kind,
+    label: kind,
+    members: [],
+    columns: [],
+    remainingPercent,
+    usedPercent: 100 - remainingPercent,
+    pace: null,
+    resets:
+      reset === undefined
+        ? []
+        : [
+            {
+              member: {
+                account: account(kind, [window]),
+                window,
+                refillPercent: 100,
+              },
+              at: reset,
+              restoresPercent: 100,
+            },
+          ],
+  });
+  const pool = (driver: string, ...windows: LimitPoolWindow[]): LimitPool => ({
+    driver: ProviderDriverKind.make(driver),
+    accounts: [],
+    windows,
+  });
+  const summarize = (pools: readonly LimitPool[], pinned?: LimitPool, maxRings?: number) =>
+    summarizeSidebarUsage({
+      pools,
+      pinnedDriver: pinned?.driver ?? null,
+      driverOrder: [ProviderDriverKind.make("codex"), ProviderDriverKind.make("claudeAgent")],
+      ...(maxRings === undefined ? {} : { maxRings }),
+    });
+
+  it("uses the shortest remaining quota and breaks ties by recovery or cycle", () => {
+    const session = quota("session", 0, now + 1000);
+    const weekly = quota("weekly", 0, now + 2000);
+    const noReset = quota("other", 0);
+    expect(selectBottleneckWindow(pool("codex", quota("weekly", 55), session))).toBe(session);
+    expect(selectBottleneckWindow(pool("codex", session, weekly))).toBe(weekly);
+    expect(selectBottleneckWindow(pool("codex", session, noReset, weekly))).toBe(noReset);
+
+    const long = quota("weekly", 20);
+    expect(
+      selectBottleneckWindow(
+        pool("codex", quota("session", 20), quota("monthly", 20), long, { ...long }),
+      ),
+    ).toBe(long);
+    expect(selectBottleneckWindow(pool("codex"))).toBeNull();
+  });
+
+  it("ignores hidden Cursor totals when choosing the bottleneck", () => {
+    const auto = { ...quota("monthly", 30), id: "autoPercentUsed" };
+    const api = { ...quota("monthly", 50), id: "apiPercentUsed" };
+    const total = { ...quota("monthly", 0), id: "totalPercentUsed" };
+    expect(selectBottleneckWindow(pool("cursor", total, api, auto))).toBe(auto);
+  });
+
+  it("handles empty, single, unknown and healthy pools", () => {
+    const codex = pool("codex", quota("session", 16));
+    const claude = pool("claudeAgent");
+    expect(summarize([])).toEqual({
+      orderedPools: [],
+      visibleRings: [],
+      overflowCount: 0,
+      focused: null,
+    });
+    expect(summarize([claude]).focused).toMatchObject({
+      remainingPercent: null,
+      severity: "normal",
+    });
+    expect(summarize([codex]).focused?.pool).toBe(codex);
+    expect(summarize([claude, codex]).focused).toBeNull();
+    expect(summarize([pool("cursor", quota("monthly", 80)), codex]).focused).toBeNull();
+    expect(summarize([claude, codex], claude).focused?.pool).toBe(claude);
+    expect(summarize([claude, codex], claude).visibleRings.map((row) => row.pool)).toEqual([
+      codex,
+      claude,
+    ]);
+  });
+
+  it("prioritizes exhaustion, then recovery time, then the pinned exhausted pool", () => {
+    const codex = pool("codex", quota("session", 0, now + 1000));
+    const claude = pool("claudeAgent", quota("session", 0, now + 2000));
+    const cursor = pool("cursor", quota("session", 1));
+    const unknownReset = pool("antigravity", quota("weekly", 0));
+    expect(summarize([codex, claude, cursor], cursor).focused?.pool).toBe(claude);
+    expect(summarize([codex, claude, cursor], codex).focused?.pool).toBe(codex);
+    expect(summarize([codex, claude, unknownReset]).focused?.pool).toBe(unknownReset);
+  });
+
+  it("prioritizes lowest warning and uses pin and driver order to break ties", () => {
+    const codex = pool("codex", quota("session", 15));
+    const claude = pool("claudeAgent", quota("session", 15));
+    const cursor = pool("cursor", quota("session", 14));
+    expect(summarize([claude, codex]).focused).toMatchObject({ pool: codex, severity: "warning" });
+    expect(summarize([claude, codex], claude).focused?.pool).toBe(claude);
+    expect(summarize([claude, codex, cursor], claude).focused?.pool).toBe(cursor);
+  });
+
+  it("reserves overflow slots for focus, pin and warnings, then keeps stable ring order", () => {
+    const codex = pool("codex", quota("session", 45));
+    const claude = pool("claudeAgent", quota("session", 10));
+    const cursor = pool("cursor", quota("session", 0));
+    const antigravity = pool("antigravity", quota("session", 25));
+    const grok = pool("grok", quota("session", 30));
+    const pools = [grok, cursor, claude, antigravity, codex];
+    const summary = summarize(pools, grok);
+    expect(summary.orderedPools.map((row) => row.pool)).toEqual([
+      grok,
+      codex,
+      claude,
+      antigravity,
+      cursor,
+    ]);
+    expect(summary.visibleRings.map((row) => row.pool)).toEqual([grok, claude, cursor]);
+    expect(summary.overflowCount).toBe(2);
+    expect(summarize(pools, grok, 1).visibleRings.map((row) => row.pool)).toEqual([cursor]);
+    expect(summarize(pools, grok, 0).overflowCount).toBe(5);
   });
 });

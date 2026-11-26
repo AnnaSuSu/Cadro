@@ -1,7 +1,10 @@
-import { T } from "gt-react";
+import { T, useGT } from "gt-react";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { type ComponentProps, type ReactNode, type RefObject } from "react";
 
+import { cn } from "~/lib/utils";
+import { dispatchCommandPalette } from "../commandPaletteStore";
+import { type CommandPaletteOverlayTab } from "./CommandPalette.logic";
 import { Command, CommandFooter, CommandInput, CommandPanel } from "./ui/command";
 import { Kbd, KbdGroup } from "./ui/kbd";
 
@@ -39,10 +42,65 @@ function restorePendingSelection(
   input.setSelectionRange(selection.start, selection.end, selection.direction ?? undefined);
 }
 
+export function CommandPaletteSearchTabs({
+  activeTab,
+}: {
+  readonly activeTab: CommandPaletteOverlayTab;
+}) {
+  const gt = useGT();
+  const tabs: ReadonlyArray<{
+    readonly id: CommandPaletteOverlayTab;
+    readonly label: string;
+  }> = [
+    { id: "all", label: gt("All") },
+    { id: "actions", label: gt("Actions") },
+    { id: "threads", label: gt("Threads") },
+    { id: "projects", label: gt("Projects") },
+    { id: "files", label: gt("Files") },
+    { id: "content", label: gt("Text") },
+  ];
+
+  return (
+    <div
+      role="tablist"
+      aria-label={gt("Search")}
+      className="flex min-w-0 flex-wrap items-center gap-1"
+    >
+      {tabs.map((tab) => {
+        const active = tab.id === activeTab;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            tabIndex={active ? 0 : -1}
+            className={cn(
+              "cursor-pointer rounded-md px-2 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+              active
+                ? "bg-foreground/10 text-foreground"
+                : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+            )}
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={() => {
+              dispatchCommandPalette({ _tag: "SelectTab", tab: tab.id });
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 type CommandPaletteContentProps = Omit<ComponentProps<typeof Command>, "children"> & {
   readonly children: ReactNode;
   readonly escapeLabel?: ReactNode;
   readonly footerActionLabel?: ReactNode;
+  readonly footerLeading?: ReactNode;
   readonly footerTrailing?: ReactNode;
   readonly inputAccessory?: ReactNode;
   readonly inputProps: ComponentProps<typeof CommandInput>;
@@ -56,6 +114,7 @@ export function CommandPaletteContent({
   children,
   escapeLabel,
   footerActionLabel,
+  footerLeading,
   footerTrailing,
   inputAccessory,
   inputProps,
@@ -92,37 +151,41 @@ export function CommandPaletteContent({
           {children}
         </CommandPanel>
         <CommandFooter className="max-sm:flex-col max-sm:items-start">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-            <KbdGroup>
-              <Kbd>
-                <ArrowUpIcon />
-              </Kbd>
-              <Kbd>
-                <ArrowDownIcon />
-              </Kbd>
-              <span>
-                <T>Navigate</T>
-              </span>
-            </KbdGroup>
-            {footerActionLabel !== undefined ? (
+          {footerLeading !== undefined ? (
+            footerLeading
+          ) : (
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
               <KbdGroup>
-                <Kbd>Enter</Kbd>
-                <span>{footerActionLabel}</span>
-              </KbdGroup>
-            ) : null}
-            {showBackHint ? (
-              <KbdGroup>
-                <Kbd>Backspace</Kbd>
+                <Kbd>
+                  <ArrowUpIcon />
+                </Kbd>
+                <Kbd>
+                  <ArrowDownIcon />
+                </Kbd>
                 <span>
-                  <T>Back</T>
+                  <T>Navigate</T>
                 </span>
               </KbdGroup>
-            ) : null}
-            <KbdGroup>
-              <Kbd>Esc</Kbd>
-              <span>{escapeLabel ?? <T>Close</T>}</span>
-            </KbdGroup>
-          </div>
+              {footerActionLabel !== undefined ? (
+                <KbdGroup>
+                  <Kbd>Enter</Kbd>
+                  <span>{footerActionLabel}</span>
+                </KbdGroup>
+              ) : null}
+              {showBackHint ? (
+                <KbdGroup>
+                  <Kbd>Backspace</Kbd>
+                  <span>
+                    <T>Back</T>
+                  </span>
+                </KbdGroup>
+              ) : null}
+              <KbdGroup>
+                <Kbd>Esc</Kbd>
+                <span>{escapeLabel ?? <T>Close</T>}</span>
+              </KbdGroup>
+            </div>
+          )}
           {footerTrailing}
         </CommandFooter>
       </Command>

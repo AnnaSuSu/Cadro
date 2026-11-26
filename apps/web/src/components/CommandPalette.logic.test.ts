@@ -824,46 +824,44 @@ describe("filterPinnedBrowseEntries", () => {
   });
 });
 
-it.each([
-  "#10839",
-  "10839",
-  "example/cadro#10839",
-  "https://github.com/example/cadro/pull/10839",
-])("finds linked threads from PR query %s", (query) => {
-  const items = buildThreadActionItems({
-    threads: [
-      makeThread({
-        title: "Implementation",
-        pullRequests: [
-          {
-            host: "github.com",
-            repository: "example/cadro",
-            number: 10839,
-            url: "https://github.com/example/cadro/pull/10839",
-            source: "manual",
-            linkedAt: "2026-09-08T00:00:00Z",
-            snapshot: null,
-            stack: null,
-          },
-        ],
-      }),
-      makeThread({ id: ThreadId.make("unrelated"), title: "Other work" }),
-    ],
-    projectByKey: new Map(),
-    icon: null,
-    runThread: async () => undefined,
-  });
-  const groups = filterCommandPaletteGroups({
-    activeGroups: [],
-    query,
-    isInSubmenu: false,
-    projectSearchItems: [],
-    threadSearchItems: items,
-  });
-  expect(groups.flatMap((group) => group.items.map((item) => item.title))).toEqual([
-    "Implementation",
-  ]);
-});
+it.each(["#10839", "10839", "example/cadro#10839", "https://github.com/example/cadro/pull/10839"])(
+  "finds linked threads from PR query %s",
+  (query) => {
+    const items = buildThreadActionItems({
+      threads: [
+        makeThread({
+          title: "Implementation",
+          pullRequests: [
+            {
+              host: "github.com",
+              repository: "example/cadro",
+              number: 10839,
+              url: "https://github.com/example/cadro/pull/10839",
+              source: "manual",
+              linkedAt: "2026-09-08T00:00:00Z",
+              snapshot: null,
+              stack: null,
+            },
+          ],
+        }),
+        makeThread({ id: ThreadId.make("unrelated"), title: "Other work" }),
+      ],
+      projectByKey: new Map(),
+      icon: null,
+      runThread: async () => undefined,
+    });
+    const groups = filterCommandPaletteGroups({
+      activeGroups: [],
+      query,
+      isInSubmenu: false,
+      projectSearchItems: [],
+      threadSearchItems: items,
+    });
+    expect(groups.flatMap((group) => group.items.map((item) => item.title))).toEqual([
+      "Implementation",
+    ]);
+  },
+);
 
 describe("command palette search return", () => {
   const picker = { addonIcon: null, groups: [] };
@@ -944,6 +942,115 @@ describe("returning from file and content search", () => {
     expect(closed).toEqual({ open: false, mode: "files", openIntent: null, session: 0 });
     expect(reduceCommandPaletteUiState(closed, { _tag: "BackToCommand" })).toEqual(closed);
     expect(reduceCommandPaletteUiState(closed, { _tag: "SetOpen", open: true })).toEqual(root);
+  });
+
+  it("switches between command filter tabs, files, and content modes via SelectTab", () => {
+    const threads = reduceCommandPaletteUiState(root, { _tag: "SelectTab", tab: "threads" });
+    expect(threads).toEqual({ ...root, mode: "command", commandTab: "threads" });
+    const files = reduceCommandPaletteUiState(threads, { _tag: "SelectTab", tab: "files" });
+    expect(files).toEqual({ ...root, mode: "files" });
+    const content = reduceCommandPaletteUiState(files, { _tag: "SelectTab", tab: "content" });
+    expect(content).toEqual({ ...root, mode: "content" });
+    const backToAll = reduceCommandPaletteUiState(content, { _tag: "SelectTab", tab: "all" });
+    expect(backToAll).toEqual(root);
+  });
+});
+
+describe("filterCommandPaletteGroups filterTab", () => {
+  const actionItem = {
+    kind: "action" as const,
+    value: "action:new",
+    title: "New chat",
+    searchTerms: ["new chat"],
+    icon: null,
+    run: async () => {},
+  };
+  const projectItem = {
+    kind: "action" as const,
+    value: "project:cadro",
+    title: "Cadro",
+    searchTerms: ["cadro"],
+    icon: null,
+    run: async () => {},
+  };
+  const threadItem = {
+    kind: "action" as const,
+    value: "thread:1",
+    title: "Cadro sidebar",
+    searchTerms: ["cadro sidebar"],
+    icon: null,
+    run: async () => {},
+  };
+  const messageItem = {
+    kind: "action" as const,
+    value: "thread:2",
+    title: "Older thread",
+    searchTerms: ["older thread"],
+    icon: null,
+    run: async () => {},
+  };
+  const activeGroups = [
+    { value: "actions", label: "Actions", items: [actionItem] },
+    { value: "recent-threads", label: "Recent Threads", items: [threadItem] },
+  ];
+
+  it("filters empty and non-empty queries by selected tab", () => {
+    expect(
+      filterCommandPaletteGroups({
+        activeGroups,
+        query: "",
+        isInSubmenu: false,
+        filterTab: "actions",
+        projectSearchItems: [projectItem],
+        threadSearchItems: [threadItem],
+      }).map((group) => group.value),
+    ).toEqual(["actions"]);
+
+    expect(
+      filterCommandPaletteGroups({
+        activeGroups,
+        query: "",
+        isInSubmenu: false,
+        filterTab: "threads",
+        projectSearchItems: [projectItem],
+        threadSearchItems: [threadItem],
+      }).map((group) => group.value),
+    ).toEqual(["threads-search"]);
+
+    expect(
+      filterCommandPaletteGroups({
+        activeGroups,
+        query: "",
+        isInSubmenu: false,
+        filterTab: "projects",
+        projectSearchItems: [projectItem],
+        threadSearchItems: [threadItem],
+      }).map((group) => group.value),
+    ).toEqual(["projects-search"]);
+
+    expect(
+      filterCommandPaletteGroups({
+        activeGroups,
+        query: "cadro",
+        isInSubmenu: false,
+        filterTab: "threads",
+        projectSearchItems: [projectItem],
+        threadSearchItems: [threadItem],
+        threadMessageItems: [messageItem],
+      }).map((group) => group.value),
+    ).toEqual(["threads-search", "threads-messages"]);
+
+    expect(
+      filterCommandPaletteGroups({
+        activeGroups,
+        query: "cadro",
+        isInSubmenu: false,
+        filterTab: "projects",
+        projectSearchItems: [projectItem],
+        threadSearchItems: [threadItem],
+        threadMessageItems: [messageItem],
+      }).map((group) => group.value),
+    ).toEqual(["projects-search"]);
   });
 });
 

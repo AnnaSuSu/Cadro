@@ -12,7 +12,7 @@ import { useProjectContentSearch } from "~/state/queries";
 import { readEnvironmentScope } from "~/state/session";
 
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
-import { CommandPaletteContent } from "../CommandPaletteContent";
+import { CommandPaletteContent, CommandPaletteSearchTabs } from "../CommandPaletteContent";
 import { ScrollArea } from "../ui/scroll-area";
 import { Toggle } from "../ui/toggle";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -86,6 +86,7 @@ function EmptyContentSearchDialog() {
       aria-label={gt("Search project contents")}
       escapeLabel={gt("Back")}
       footerActionLabel={gt("Open file")}
+      footerLeading={<CommandPaletteSearchTabs activeTab="content" />}
       inputProps={{ disabled: true, placeholder: gt("Search project contents…") }}
       mode="none"
       panelSize="fill"
@@ -173,6 +174,7 @@ function OpenContentSearchDialog(props: {
       aria-label={gt("Search file contents in {project}", { project: target.projectName })}
       escapeLabel={gt("Back")}
       footerActionLabel={gt("Open file")}
+      footerLeading={<CommandPaletteSearchTabs activeTab="content" />}
       inputAccessory={
         <div className="absolute inset-e-2.5 top-1/2 flex shrink-0 -translate-y-1/2 items-center gap-0.5 rounded-lg border bg-muted/30 p-0.5">
           <SearchOptionButton

@@ -11337,8 +11337,6 @@
   "c6a6c7505f112468": "Host connected",
   "f47ea63df2c8d41e": "Connecting to host",
   "e2317dd9439e5423": "Host offline",
-  "a6f7d026054d7293": "Workbench",
-  "3213c38c70fe39f7": "Workspace navigation",
   "fee9f4f38e28f4c7": "Workspace menu",
   "f975fc62995c1f4c": "Connections & Self-Host",
   "1ab50db28dbddd0d": "Keyboard shortcuts",
@@ -12279,5 +12277,7 @@
       "c": "cadro.json"
     },
     ". Eles são executados na máquina deste ambiente com as suas permissões, fora de qualquer sandbox de agente. Você será perguntado de novo sempre que o texto deles mudar."
-  ]
+  ],
+  "876e7a8c229f3d07": "Desafixar",
+  "045741aa62df51f8": "Todos"
 }

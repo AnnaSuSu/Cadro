@@ -50,7 +50,7 @@
   --sidebar-title-fade-start: calc(100% - 1rem);
   --sidebar-wordmark-size: 1.1875rem;
   --sidebar-wordmark-weight: 650;
-  --settings-nav-inset: max(0.5rem, calc(var(--workspace-controls-left) - 3rem));
+  --settings-nav-inset: var(--workspace-controls-left);
   --sidebar-icon-color: color-mix(
     in srgb,
     var(--contrast-sidebar-muted-foreground) 85%,

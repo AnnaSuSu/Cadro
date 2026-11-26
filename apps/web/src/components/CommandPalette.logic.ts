@@ -78,6 +78,8 @@ export function browseInputEndPaddingClass(input: {
 }
 
 export type SearchOverlayMode = "command" | "files" | "content";
+export type CommandPaletteSearchTab = "all" | "actions" | "threads" | "projects";
+export type CommandPaletteOverlayTab = CommandPaletteSearchTab | "files" | "content";
 
 export type CommandPaletteOpenIntent =
   | { readonly kind: "add-project" | "new-thread-in" | "change-theme" }
@@ -90,6 +92,7 @@ export type CommandPaletteOpenIntent =
 export interface CommandPaletteUiState {
   readonly open: boolean;
   readonly mode: SearchOverlayMode;
+  readonly commandTab?: CommandPaletteSearchTab;
   /** What the current palette session opened to; read once when the palette view mounts. */
   readonly openIntent: CommandPaletteOpenIntent | null;
   /** Bumped by every intent so an open palette starts over from the new one. */
@@ -101,6 +104,7 @@ export interface CommandPaletteUiState {
 export type CommandPaletteUiAction =
   | { readonly _tag: "SetOpen"; readonly open: boolean }
   | { readonly _tag: "ToggleMode"; readonly mode: SearchOverlayMode }
+  | { readonly _tag: "SelectTab"; readonly tab: CommandPaletteOverlayTab }
   | {
       readonly _tag: "OpenSearch";
       readonly query: string;
@@ -136,6 +140,17 @@ export function reduceCommandPaletteUiState(
       return state.open && state.mode === action.mode
         ? { open: false, mode: state.mode, openIntent: null, session }
         : { open: true, mode: action.mode, openIntent: null, session };
+    case "SelectTab":
+      if (action.tab === "files" || action.tab === "content") {
+        return { open: true, mode: action.tab, openIntent: null, session };
+      }
+      return {
+        open: true,
+        mode: "command",
+        ...(action.tab === "all" ? {} : { commandTab: action.tab }),
+        openIntent: null,
+        session,
+      };
     case "OpenChildSearch":
       return {
         open: true,
@@ -587,6 +602,7 @@ export function filterCommandPaletteGroups(
     threadSearchItems: ReadonlyArray<CommandPaletteActionItem>;
     /** Threads whose messages match, best first; threads already listed are skipped. */
     threadMessageItems?: ReadonlyArray<CommandPaletteActionItem>;
+    filterTab?: CommandPaletteSearchTab;
     now?: number;
   },
   resolve: MessageResolver = m,
@@ -606,25 +622,52 @@ export function filterCommandPaletteGroups(
   }
 
   const isActionsFilter = input.query.startsWith(">");
+  const filterTab = input.isInSubmenu || isActionsFilter ? "all" : (input.filterTab ?? "all");
   const searchQuery = isActionsFilter ? input.query.slice(1) : input.query;
   const normalizedQuery = foldSearchQuery(searchQuery);
 
   if (normalizedQuery.length === 0) {
-    if (isActionsFilter) {
+    if (isActionsFilter || filterTab === "actions") {
       return input.activeGroups.filter((group) => group.value === "actions");
+    }
+    if (filterTab === "threads") {
+      return input.threadSearchItems.length > 0
+        ? [
+            {
+              value: "threads-search",
+              label: resolve(msg("Threads")),
+              items: input.threadSearchItems,
+            },
+          ]
+        : [];
+    }
+    if (filterTab === "projects") {
+      return input.projectSearchItems.length > 0
+        ? [
+            {
+              value: "projects-search",
+              label: resolve(msg("Projects")),
+              items: input.projectSearchItems,
+            },
+          ]
+        : [];
     }
     return [...input.activeGroups];
   }
 
   let baseGroups = [...input.activeGroups];
-  if (isActionsFilter) {
+  if (isActionsFilter || filterTab === "actions") {
     baseGroups = baseGroups.filter((group) => group.value === "actions");
+  } else if (filterTab === "threads" || filterTab === "projects") {
+    baseGroups = [];
   } else if (!input.isInSubmenu) {
     baseGroups = baseGroups.filter((group) => group.value !== "recent-threads");
   }
 
   const searchableGroups = [...baseGroups];
-  const searchesEverything = !input.isInSubmenu && !isActionsFilter;
+  const searchesEverything = !input.isInSubmenu && !isActionsFilter && filterTab === "all";
+  const searchesThreads = searchesEverything || filterTab === "threads";
+  const searchesProjects = searchesEverything || filterTab === "projects";
   // On equal match classes, groups keep this order: threads, what people search
   // for most, right after commands.
   if (searchesEverything) {
@@ -635,27 +678,27 @@ export function filterCommandPaletteGroups(
         items: input.allOptions.nestedItems,
       });
     }
-    if (input.threadSearchItems.length > 0) {
-      searchableGroups.push({
-        value: "threads-search",
-        label: resolve(msg("Threads")),
-        items: input.threadSearchItems,
-      });
-    }
-    if (input.projectSearchItems.length > 0) {
-      searchableGroups.push({
-        value: "projects-search",
-        label: resolve(msg("Projects")),
-        items: input.projectSearchItems,
-      });
-    }
-    if (input.settingsSearchItems && input.settingsSearchItems.length > 0) {
-      searchableGroups.push({
-        value: "settings-search",
-        label: resolve(msg("Settings")),
-        items: input.settingsSearchItems,
-      });
-    }
+  }
+  if (searchesThreads && input.threadSearchItems.length > 0) {
+    searchableGroups.push({
+      value: "threads-search",
+      label: resolve(msg("Threads")),
+      items: input.threadSearchItems,
+    });
+  }
+  if (searchesProjects && input.projectSearchItems.length > 0) {
+    searchableGroups.push({
+      value: "projects-search",
+      label: resolve(msg("Projects")),
+      items: input.projectSearchItems,
+    });
+  }
+  if (searchesEverything && input.settingsSearchItems && input.settingsSearchItems.length > 0) {
+    searchableGroups.push({
+      value: "settings-search",
+      label: resolve(msg("Settings")),
+      items: input.settingsSearchItems,
+    });
   }
 
   const now = input.now ?? Date.now();
@@ -688,7 +731,7 @@ export function filterCommandPaletteGroups(
     return { value: group.value, label: group.label, items };
   });
 
-  if (!searchesEverything) return groups;
+  if (!searchesThreads) return groups;
   const listed = new Set(groups.flatMap((group) => group.items.map((item) => item.value)));
   // The items arrive cut to what the palette shows; see `nextShownOrder`.
   const messageItems = (input.threadMessageItems ?? []).filter((item) => !listed.has(item.value));

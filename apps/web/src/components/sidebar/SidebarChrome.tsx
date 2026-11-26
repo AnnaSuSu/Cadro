@@ -7,27 +7,49 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CircleDotIcon,
+  KeyboardIcon,
+  NetworkIcon,
+  PaletteIcon,
   SettingsIcon,
 } from "lucide-react";
 import { memo, type ReactNode } from "react";
 
+import { useTheme } from "../../hooks/useTheme";
 import { shortcutLabelForCommand } from "../../keybindings";
-import { cn } from "../../lib/utils";
+import { cn, isMacPlatform } from "../../lib/utils";
 import {
   navigateHistory,
   useCanNavigateHistory,
   type HistoryDirection,
 } from "../../navigationHistory";
-import { useIssuesSupported, usePullRequestsSupported } from "../../state/environments";
+import {
+  useEnvironments,
+  useIssuesSupported,
+  usePrimaryEnvironment,
+  usePullRequestsSupported,
+} from "../../state/environments";
 import { primaryServerKeybindingsAtom } from "../../state/server";
-import { CadroWordmark } from "../CadroBrand";
+import { CadroMark, CadroWordmark } from "../CadroBrand";
 import { readIssueListPreferences } from "../issue/issueListPreferences";
-import { IssueGlyph } from "../issue/issuePresentation";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { Button } from "../ui/button";
-import { Menu, MenuTrigger } from "../ui/menu";
-import { WorkspaceMenuPopup } from "./CadroActivityRail";
+import {
+  Menu,
+  MenuGroup,
+  MenuItem,
+  MenuPopup,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuRadioItemIndicator,
+  MenuSeparator,
+  MenuShortcut,
+  MenuSub,
+  MenuSubPopup,
+  MenuSubTrigger,
+  MenuTrigger,
+} from "../ui/menu";
 import {
   SidebarFooter,
   SidebarMenu,
@@ -39,6 +61,130 @@ import {
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
+import { SidebarUsageButton } from "./SidebarUsageButton";
+
+function useWorkspaceHost() {
+  const gt = useGT();
+  const primary = usePrimaryEnvironment();
+  const { environments } = useEnvironments();
+  const host =
+    primary ??
+    environments.find((environment) => environment.connection.phase === "connected") ??
+    environments[0];
+  const connected = host?.connection.phase === "connected";
+  const connecting =
+    host?.connection.phase === "connecting" || host?.connection.phase === "reconnecting";
+  const connectionLabel = connected
+    ? gt("Host connected")
+    : connecting
+      ? gt("Connecting to host")
+      : gt("Host offline");
+  return { host, connectionLabel };
+}
+
+const workspaceMenuIcon = "size-3.5 text-foreground opacity-80";
+
+function WorkspaceMenuPopup({ side }: { side: "right" | "bottom" }) {
+  const gt = useGT();
+  const navigate = useNavigate();
+  const pullRequestsSupported = usePullRequestsSupported();
+  const issuesSupported = useIssuesSupported();
+  const { host, connectionLabel } = useWorkspaceHost();
+  const { appearanceMode, setAppearanceMode } = useTheme();
+  const settingsShortcut = isMacPlatform(navigator.platform) ? "⌘," : "Ctrl+,";
+  return (
+    <MenuPopup
+      side={side}
+      align={side === "right" ? "end" : "start"}
+      surface="panel"
+      className="w-[230px]"
+    >
+      <div className="flex items-center gap-1.5 px-1 py-1.5">
+        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-sidebar-foreground text-sidebar">
+          <CadroMark aria-hidden className="size-3.5" />
+        </span>
+        <div className="min-w-0 leading-tight">
+          <div className="text-sm font-medium">Cadro</div>
+          <div className="truncate text-xs text-muted-foreground">
+            {host?.label ?? connectionLabel}
+          </div>
+        </div>
+      </div>
+      <MenuSeparator />
+      <MenuGroup>
+        <MenuSub>
+          <MenuSubTrigger>
+            <PaletteIcon aria-hidden className={workspaceMenuIcon} />
+            {gt("Appearance")}
+          </MenuSubTrigger>
+          <MenuSubPopup surface="panel" sideOffset={3}>
+            <MenuRadioGroup
+              aria-label={gt("Appearance")}
+              value={appearanceMode}
+              onValueChange={(mode) => {
+                if (mode === "light" || mode === "dark" || mode === "system")
+                  setAppearanceMode(mode);
+              }}
+            >
+              {(
+                [
+                  ["system", gt("System")],
+                  ["light", gt("Light")],
+                  ["dark", gt("Dark")],
+                ] as const
+              ).map(([value, label]) => (
+                <MenuRadioItem key={value} value={value}>
+                  <span className="flex items-center justify-between">
+                    {label}
+                    <MenuRadioItemIndicator />
+                  </span>
+                </MenuRadioItem>
+              ))}
+            </MenuRadioGroup>
+          </MenuSubPopup>
+        </MenuSub>
+        <MenuItem onClick={() => void navigate({ to: "/settings" })}>
+          <SettingsIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Settings")}
+          <MenuShortcut>{settingsShortcut}</MenuShortcut>
+        </MenuItem>
+        <MenuItem onClick={() => void navigate({ to: "/settings/keybindings" })}>
+          <KeyboardIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Keyboard shortcuts")}
+        </MenuItem>
+      </MenuGroup>
+      <MenuSeparator />
+      <MenuGroup>
+        <MenuItem onClick={() => void navigate({ to: "/settings/connections" })}>
+          <NetworkIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Connections & Self-Host")}
+        </MenuItem>
+        {pullRequestsSupported ? (
+          <MenuItem
+            onClick={() =>
+              void navigate({ to: "/pull-requests", search: readPullRequestListPreferences() })
+            }
+          >
+            <PullRequestGlyph.pullRequest aria-hidden className={workspaceMenuIcon} />
+            {gt("Pull requests")}
+          </MenuItem>
+        ) : null}
+        {issuesSupported ? (
+          <MenuItem
+            onClick={() => void navigate({ to: "/issues", search: readIssueListPreferences() })}
+          >
+            <CircleDotIcon aria-hidden className={workspaceMenuIcon} />
+            {gt("Issues", { $context: "sidebar link to the list of issues" })}
+          </MenuItem>
+        ) : null}
+        <MenuItem onClick={() => void navigate({ to: "/usage" })}>
+          <ChartNoAxesColumnIcon aria-hidden className={workspaceMenuIcon} />
+          {gt("Usage")}
+        </MenuItem>
+      </MenuGroup>
+    </MenuPopup>
+  );
+}
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   isElectron,
@@ -52,13 +198,12 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   return (
     <div
       className={cn(
-        "relative shrink-0 pt-2",
-        showHistory && "md:pt-10",
+        "relative shrink-0 pt-2 md:pt-(--workspace-topbar-height)",
         isElectron && "drag-region",
       )}
     >
       {showHistory ? (
-        <div className="absolute inset-e-0 top-0 hidden h-7 items-center gap-1 md:flex">
+        <div className="absolute inset-e-0 top-0 hidden h-(--workspace-topbar-height) items-center gap-1 md:flex">
           <HistoryNavigationButton direction="back" />
           <HistoryNavigationButton direction="forward" />
         </div>
@@ -133,31 +278,6 @@ function HistoryNavigationButton({ direction }: { direction: HistoryDirection })
   );
 }
 
-function SidebarUtilityItem({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <SidebarMenuItem className="shrink-0">
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <SidebarMenuButton aria-label={label} onClick={onClick} size="icon">
-              {icon}
-            </SidebarMenuButton>
-          }
-        />
-        <TooltipPopup side="top">{label}</TooltipPopup>
-      </Tooltip>
-    </SidebarMenuItem>
-  );
-}
-
 const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const navigate = useNavigate();
   const navigateToMainApp = useNavigateToMainApp();
@@ -166,47 +286,26 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const isOnUtilityPage = useLocation({
     select: (location) => isSidebarUtilityPage(location.pathname),
   });
-  const pullRequestsSupported = usePullRequestsSupported();
-  const issuesSupported = useIssuesSupported();
   const closeMobileSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
   };
-  const handlePullRequestsClick = () => {
-    closeMobileSidebar();
-    void navigate({
-      to: "/pull-requests",
-      search: readPullRequestListPreferences(),
-    });
-  };
-  const handleIssuesClick = () => {
-    closeMobileSidebar();
-    void navigate({ to: "/issues", search: readIssueListPreferences() });
-  };
   const handleSettingsClick = () => {
     closeMobileSidebar();
     void navigate({ to: "/settings" });
   };
-
-  const handleUsageClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-    void navigate({ to: "/usage" });
-  };
-
   const handleBackClick = () => {
     closeMobileSidebar();
     void navigateToMainApp();
   };
 
   return (
-    <SidebarMenu className="flex-row items-center">
+    <SidebarMenu>
       {isOnUtilityPage ? (
-        <SidebarMenuItem className="min-w-0 flex-1">
-          <SidebarMenuButton onClick={handleBackClick}>
-            <ArrowLeftIcon />
+        <SidebarMenuItem>
+          <SidebarMenuButton size="row" variant="primary" onClick={handleBackClick}>
+            <ArrowLeftIcon aria-hidden className="size-4 stroke-(length:--sidebar-icon-stroke)" />
             <span>
               <T>Back</T>
             </span>
@@ -214,30 +313,18 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
         </SidebarMenuItem>
       ) : (
         <>
-          <SidebarUtilityItem
-            icon={<SettingsIcon />}
-            label={gt("Settings")}
-            onClick={handleSettingsClick}
-          />
-          {pullRequestsSupported ? (
-            <SidebarUtilityItem
-              icon={<PullRequestGlyph.pullRequest />}
-              label={gt("Pull requests")}
-              onClick={handlePullRequestsClick}
-            />
-          ) : null}
-          {issuesSupported ? (
-            <SidebarUtilityItem
-              icon={<IssueGlyph.issue />}
-              label={gt("Issues", { $context: "sidebar link to the list of issues" })}
-              onClick={handleIssuesClick}
-            />
-          ) : null}
-          <SidebarUtilityItem
-            icon={<ChartNoAxesColumnIcon />}
-            label={gt("Usage")}
-            onClick={handleUsageClick}
-          />
+          <SidebarUsageButton onNavigate={closeMobileSidebar} />
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              type="button"
+              size="row"
+              variant="primary"
+              onClick={handleSettingsClick}
+            >
+              <SettingsIcon aria-hidden className="size-4 stroke-(length:--sidebar-icon-stroke)" />
+              <span>{gt("Settings")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </>
       )}
     </SidebarMenu>
@@ -248,7 +335,7 @@ export const SidebarChromeFooter = memo(function SidebarChromeFooter() {
   return (
     <SidebarFooter>
       <SidebarThreadUndoNotice />
-      <div className="md:hidden">
+      <div className="border-t border-sidebar-border/60 pt-1.5">
         <SidebarUtilityMenu />
       </div>
     </SidebarFooter>
