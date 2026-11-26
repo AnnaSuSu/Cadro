@@ -196,8 +196,7 @@ it.effect("runs background Git in its own lane so user commands never queue behi
       concurrency: "unbounded",
     }).pipe(Effect.forkChild);
 
-    yield* TestClock.adjust("2 seconds");
-    const started = yield* Queue.takeAll(starts);
+    const started = yield* Queue.takeN(starts, 6);
     assert.deepStrictEqual([...started].toSorted(), [
       "background",
       "background",
@@ -8397,7 +8396,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
       }),
     );
 
-    it.effect("fails without a worktree when the cadro.json sparse pattern path is not a file", () =>
+    it.effect("rejects a non-file sparse pattern path without creating a worktree", () =>
       Effect.gen(function* () {
         const fileSystem = yield* FileSystem.FileSystem;
         const pathService = yield* Path.Path;
