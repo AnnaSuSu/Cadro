@@ -4,6 +4,10 @@ Open **Usage** from the sidebar or the command palette, or press `mod+u` on web 
 desktop when the terminal is not focused. Press it again to close Usage. Customize **Usage: Toggle** in
 **Settings → Keybindings**.
 
+The ring above the workspace menu opens a summary of provider limits. It shows
+the remaining weekly Codex quota when available. Open **Manage usage** for the
+full dashboard. An empty ring means no quota has been reported yet.
+
 On mobile, choose **Usage** in the workspace navigation.
 
 ## Understand your usage

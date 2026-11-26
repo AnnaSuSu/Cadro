@@ -21,6 +21,7 @@ import {
   usePrimaryEnvironment,
   useEnvironments,
 } from "../../state/environments";
+import { RailUsageButton } from "./RailUsageButton";
 import { CadroMark } from "../CadroBrand";
 import { readIssueListPreferences } from "../issue/issueListPreferences";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
@@ -56,7 +57,6 @@ export function CadroActivityRail({
   const gt = useGT();
   const pathname = useLocation({ select: (location) => location.pathname });
   const pullRequestsSupported = usePullRequestsSupported();
-  const { connected, connecting, connectionLabel } = useWorkspaceHost();
   const links = [
     {
       to: "/",
@@ -121,33 +121,7 @@ export function CadroActivityRail({
         );
       })}
       <div className="mt-auto flex flex-col items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Link
-                to="/settings/connections"
-                aria-label={connectionLabel}
-                className={cn(
-                  railButtonClass,
-                  pathname === "/settings/connections" && "bg-sidebar-row-active",
-                )}
-              />
-            }
-          >
-            <span
-              aria-hidden
-              className="grid size-5 place-items-center rounded-full border border-sidebar-border"
-            >
-              <span
-                className={cn(
-                  "size-2 rounded-full",
-                  connected ? "bg-success" : connecting ? "bg-warning" : "bg-error",
-                )}
-              />
-            </span>
-          </TooltipTrigger>
-          <TooltipPopup side="right">{connectionLabel}</TooltipPopup>
-        </Tooltip>
+        <RailUsageButton />
         <Menu>
           <MenuTrigger
             aria-label={gt("Workspace menu")}
@@ -180,7 +154,7 @@ function useWorkspaceHost() {
     : connecting
       ? gt("Connecting to host")
       : gt("Host offline");
-  return { host, connected, connecting, connectionLabel };
+  return { host, connectionLabel };
 }
 
 const workspaceMenuIcon = "size-3.5 text-foreground opacity-80";

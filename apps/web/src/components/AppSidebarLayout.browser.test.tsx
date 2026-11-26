@@ -19,6 +19,23 @@ vi.mock(import("./Sidebar"), () => ({ default: (() => null) as never }));
 import { AppSidebarLayout } from "./AppSidebarLayout";
 
 describe("sidebar toggle shortcut", () => {
+  it("opens the usage summary from the rail and links to the usage page", async () => {
+    await page.viewport(1280, 800);
+    await using screen = await render(
+      <AppSidebarLayout>
+        <style>{appCss}</style>
+      </AppSidebarLayout>,
+    );
+    const usage = screen.getByRole("button", { name: "Usage limits" });
+    await usage.click();
+    await expect.element(page.getByText("No limits reported.")).toBeVisible();
+    await expect
+      .element(page.getByRole("link", { name: "Manage usage" }))
+      .toHaveAttribute("href", "/usage");
+    await userEvent.keyboard("{Escape}");
+    await expect.element(usage).toHaveFocus();
+  });
+
   it("leaves the key to a focused terminal when its rule excludes terminalFocus", async () => {
     await page.viewport(1280, 800);
     using _platform = vi.spyOn(navigator, "platform", "get").mockReturnValue("Linux x86_64");
